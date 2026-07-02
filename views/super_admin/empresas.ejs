@@ -1,0 +1,86 @@
+<%
+/* Lista completa de empresas con acciones de activar/suspender (SAD 2.1.1 RF-01/02). */
+%>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+  <div class="hazard-stripe" style="flex:1; margin-right:16px;"></div>
+  <a href="/super_admin/empresas/nueva" class="cf-btn cf-btn-primary">+ Nueva empresa</a>
+</div>
+
+<% if (typeof mensaje !== 'undefined' && mensaje) { %>
+  <div class="cf-alert cf-alert-success"><%= mensaje %></div>
+<% } %>
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="cf-alert cf-alert-error"><%= error %></div>
+<% } %>
+
+<div class="cf-card" style="padding:0; overflow:hidden;">
+  <% if (!empresas.length) { %>
+    <div class="cf-empty" style="border:none;">
+      <div class="font-display">No hay empresas registradas</div>
+      Crea la primera empresa usando el boton superior.
+    </div>
+  <% } else { %>
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>tenant_id</th>
+          <th>NIT</th>
+          <th>Plan</th>
+          <th>Contacto</th>
+          <th>Estado</th>
+          <th>Registro</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% empresas.forEach(function(e) { %>
+          <tr>
+            <td style="font-weight:600;"><%= e.nombre_empresa %></td>
+            <td><code class="font-mono" style="font-size:0.76rem;"><%= e.tenant_id %></code></td>
+            <td style="font-size:0.84rem;"><%= e.nit || '—' %></td>
+            <td><%= e.plan %></td>
+            <td style="font-size:0.82rem;">
+              <% if (e.contacto && e.contacto.nombre) { %>
+                <%= e.contacto.nombre %><br>
+                <span style="color:var(--ink-500);"><%= e.contacto.email || '' %></span>
+              <% } else { %>
+                <span style="color:var(--ink-500);">—</span>
+              <% } %>
+            </td>
+            <td>
+              <% if (e.estado === 'activo') { %>
+                <span class="cf-badge cf-badge-success">activo</span>
+              <% } else { %>
+                <span class="cf-badge cf-badge-danger">suspendido</span>
+              <% } %>
+            </td>
+            <td style="font-size:0.82rem; color:var(--ink-500);">
+              <%= new Date(e.creado_en).toLocaleDateString('es-CO') %>
+            </td>
+            <td>
+              <% if (e.estado === 'activo') { %>
+                <form method="POST" action="/super_admin/empresas/<%= e.tenant_id %>/suspender" style="display:inline;">
+                  <button type="submit"
+                    class="cf-btn cf-btn-danger cf-btn-sm"
+                    data-confirm="¿Suspender la empresa '<%= e.nombre_empresa %>'? Sus usuarios no podran iniciar sesion.">
+                    Suspender
+                  </button>
+                </form>
+              <% } else { %>
+                <form method="POST" action="/super_admin/empresas/<%= e.tenant_id %>/activar" style="display:inline;">
+                  <button type="submit"
+                    class="cf-btn cf-btn-ghost cf-btn-sm"
+                    data-confirm="¿Reactivar '<%= e.nombre_empresa %>'?">
+                    Activar
+                  </button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

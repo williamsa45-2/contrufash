@@ -1,0 +1,158 @@
+<%
+/* RF-10: Reporte de novedades / incidentes desde campo */
+const tipoLabel = { retraso:'Retraso', bloqueo:'Bloqueo', material:'Material', seguridad:'Seguridad', otro:'Otro' };
+const tipoBadge = { retraso:'cf-badge-warning', bloqueo:'cf-badge-danger', material:'cf-badge-info', seguridad:'cf-badge-danger', otro:'cf-badge-neutral' };
+%>
+
+<div style="max-width:640px;">
+  <a href="/jefe_obra/dashboard" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:16px;">← Mis fases</a>
+
+  <div class="cf-card" style="margin-bottom:18px; border-left:4px solid var(--orange-600);">
+    <div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-500);">PROYECTO · FASE</div>
+    <div style="font-weight:600;"><%= proyecto.nombre %> — <%= fase.nombre %></div>
+  </div>
+
+  <div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+  <div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+  <!-- Formulario nueva novedad -->
+  <div class="cf-card" style="margin-bottom:24px;">
+    <h2 style="margin:0 0 16px; font-size:1rem;">Reportar novedad</h2>
+
+    <div class="cf-field">
+      <label>Tipo de novedad <span style="color:var(--orange-600);">*</span></label>
+      <select id="tipo-sel">
+        <option value="">— Selecciona —</option>
+        <% TIPOS_NOVEDAD.forEach(function(t) { %>
+          <option value="<%= t %>"><%= tipoLabel[t] || t %></option>
+        <% }); %>
+      </select>
+    </div>
+
+    <div class="cf-field">
+      <label>Descripcion <span style="color:var(--orange-600);">*</span></label>
+      <textarea id="desc-input" rows="3" placeholder="Describe el problema con el mayor detalle posible..."
+                style="resize:vertical;"></textarea>
+    </div>
+
+    <div class="cf-field">
+      <label>Foto de evidencia (opcional)</label>
+      <input type="file" id="foto-input" accept="image/*" capture="environment" style="padding:6px 0;">
+      <div id="foto-preview" style="display:none; margin-top:8px;">
+        <img id="preview-img" style="max-width:100%; max-height:180px; border-radius:6px; border:1px solid var(--line);">
+      </div>
+    </div>
+
+    <button id="btn-reportar" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
+      Reportar novedad
+    </button>
+  </div>
+
+  <!-- Historial de novedades de esta fase -->
+  <div class="cf-card">
+    <h2 style="margin:0 0 14px; font-size:1rem;">
+      Novedades de esta fase
+      <% const abiertas = novedades.filter(function(n) { return n.estado === 'abierta'; }).length; %>
+      <% if (abiertas > 0) { %>
+        <span class="cf-badge cf-badge-danger" style="margin-left:8px; vertical-align:middle;"><%= abiertas %> abierta(s)</span>
+      <% } %>
+    </h2>
+    <% if (!novedades.length) { %>
+      <div style="color:var(--ink-500); font-size:0.86rem;">Sin novedades reportadas para esta fase.</div>
+    <% } else { %>
+      <% novedades.forEach(function(n) { %>
+        <div class="phase-row" style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="cf-badge <%= tipoBadge[n.tipo] || 'cf-badge-neutral' %>"><%= tipoLabel[n.tipo] || n.tipo %></span>
+              <% if (n.estado === 'gestionada') { %>
+                <span class="cf-badge cf-badge-success">Gestionada</span>
+              <% } else { %>
+                <span class="cf-badge cf-badge-warning">Abierta</span>
+              <% } %>
+            </div>
+            <span class="font-mono" style="font-size:0.72rem; color:var(--ink-500);">
+              <%= new Date(n.creado_en).toLocaleDateString('es-CO') %>
+            </span>
+          </div>
+          <div style="font-size:0.88rem; margin-bottom:6px;"><%= n.descripcion %></div>
+          <% if (n.evidencia && n.evidencia.url) { %>
+            <img src="<%= n.evidencia.url %>"
+                 style="max-width:200px; max-height:120px; border-radius:5px; border:1px solid var(--line); margin-bottom:6px;">
+          <% } %>
+          <% if (n.respuesta_admin) { %>
+            <div style="background:var(--success-100); border-radius:5px; padding:8px 10px; font-size:0.82rem; color:var(--success-600);">
+              <strong>Respuesta del Admin:</strong> <%= n.respuesta_admin %>
+            </div>
+          <% } %>
+        </div>
+      <% }); %>
+    <% } %>
+  </div>
+</div>
+
+<script>
+(function () {
+  const PROYECTO_ID = '<%= proyecto._id %>';
+  const FASE_ID     = '<%= fase._id %>';
+  const fotoInput   = document.getElementById('foto-input');
+  const previewDiv  = document.getElementById('foto-preview');
+  const previewImg  = document.getElementById('preview-img');
+
+  fotoInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) { previewDiv.style.display = 'none'; return; }
+    const reader = new FileReader();
+    reader.onload = (e) => { previewImg.src = e.target.result; previewDiv.style.display = 'block'; };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('btn-reportar').addEventListener('click', async function () {
+    const msgOk = document.getElementById('msg-ok');
+    const msgErr = document.getElementById('msg-err');
+    msgOk.style.display = 'none';
+    msgErr.style.display = 'none';
+
+    const tipo = document.getElementById('tipo-sel').value;
+    const desc = document.getElementById('desc-input').value.trim();
+    const foto = fotoInput.files[0];
+
+    if (!tipo) { msgErr.textContent = 'Selecciona el tipo de novedad.'; msgErr.style.display = 'block'; return; }
+    if (!desc) { msgErr.textContent = 'La descripcion es obligatoria.'; msgErr.style.display = 'block'; return; }
+
+    this.disabled = true;
+    this.textContent = 'Enviando...';
+
+    try {
+      const fd = new FormData();
+      fd.append('proyecto_id', PROYECTO_ID);
+      fd.append('fase_id', FASE_ID);
+      fd.append('tipo', tipo);
+      fd.append('descripcion', desc);
+      if (foto) fd.append('foto', foto);
+
+      const token = localStorage.getItem('cf_token') || '';
+      const res = await fetch('/api/novedades', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al reportar');
+
+      msgOk.textContent = '✓ Novedad reportada. El Admin fue notificado.';
+      msgOk.style.display = 'block';
+      document.getElementById('tipo-sel').value = '';
+      document.getElementById('desc-input').value = '';
+      fotoInput.value = '';
+      previewDiv.style.display = 'none';
+    } catch (err) {
+      msgErr.textContent = err.message;
+      msgErr.style.display = 'block';
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Reportar novedad';
+    }
+  });
+})();
+</script>

@@ -1,0 +1,218 @@
+<div class="cf-topbar" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+  <h1 style="margin:0; font-size:1.15rem; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+    <%= title %>
+  </h1>
+
+  <% if (typeof user !== 'undefined' && user) { %>
+  <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+
+    <!-- Campana de notificaciones -->
+    <div style="position:relative;">
+      <button id="cf-notif-btn" aria-label="Notificaciones"
+        style="background:none; border:none; cursor:pointer; padding:6px; border-radius:6px;
+               display:flex; align-items:center; color:var(--ink-700);"
+        onmouseover="this.style.background='var(--paper)'"
+        onmouseout="this.style.background='none'">
+        <!-- Icono campana SVG -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <!-- Badge de no leidas -->
+        <span id="cf-notif-badge" style="display:none; position:absolute; top:2px; right:2px;
+              background:var(--orange-600); color:#fff; border-radius:999px; font-size:0.6rem;
+              font-family:var(--font-mono); font-weight:700; min-width:16px; height:16px;
+              display:none; align-items:center; justify-content:center; padding:0 3px;
+              pointer-events:none;">0</span>
+      </button>
+
+      <!-- Panel de notificaciones -->
+      <div id="cf-notif-panel" style="display:none; position:absolute; top:calc(100% + 8px); right:0;
+           width:340px; background:var(--paper-card); border:1px solid var(--line); border-radius:8px;
+           box-shadow:0 8px 32px rgba(0,0,0,.15); z-index:9500; overflow:hidden;">
+        <div style="padding:12px 14px; border-bottom:1px solid var(--line); display:flex;
+                    justify-content:space-between; align-items:center;">
+          <span style="font-family:var(--font-display); font-size:0.82rem; letter-spacing:.05em;">
+            NOTIFICACIONES
+          </span>
+          <div style="display:flex; gap:6px;">
+            <button id="cf-notif-leer-todas" class="cf-btn cf-btn-ghost cf-btn-sm"
+                    style="font-size:0.72rem; padding:3px 8px;">Marcar leídas</button>
+            <button id="cf-notif-limpiar" class="cf-btn cf-btn-ghost cf-btn-sm"
+                    style="font-size:0.72rem; padding:3px 8px;">Limpiar</button>
+          </div>
+        </div>
+        <div id="cf-notif-lista" style="max-height:380px; overflow-y:auto;">
+          <div style="padding:24px; text-align:center; color:var(--ink-500); font-size:0.84rem;"
+               id="cf-notif-empty">Cargando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Link al perfil -->
+    <a href="/perfil" style="display:flex; align-items:center; gap:6px; text-decoration:none;
+       padding:5px 10px; border-radius:6px; border:1px solid var(--line); font-size:0.82rem;
+       color:var(--ink-700);"
+       onmouseover="this.style.borderColor='var(--ink-500)'"
+       onmouseout="this.style.borderColor='var(--line)'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <%= user.nombre ? user.nombre.split(' ')[0] : 'Perfil' %>
+    </a>
+  </div>
+  <% } %>
+</div>
+
+<script>
+(function () {
+  const btn    = document.getElementById('cf-notif-btn');
+  const panel  = document.getElementById('cf-notif-panel');
+  const badge  = document.getElementById('cf-notif-badge');
+  const lista  = document.getElementById('cf-notif-lista');
+  const empty  = document.getElementById('cf-notif-empty');
+  const token  = localStorage.getItem('cf_token') || '';
+
+  if (!btn) return;
+
+  const iconoTipo = {
+    material_solicitado: '📦', material_aprobado: '✅',
+    material_rechazado: '❌', material_despachado: '🚛',
+    novedad_nueva: '🚧', fase_avance: '📊',
+    alerta_constructor: '⚠️', foto_cumplimiento: '📷', sistema: 'ℹ️',
+  };
+
+  async function fetchJSON(url, opts = {}) {
+    const res = await fetch(url, {
+      headers: { Authorization: 'Bearer ' + token, ...opts.headers },
+      ...opts,
+    });
+    return res.json();
+  }
+
+  // Actualizar badge de no leidas
+  async function actualizarBadge() {
+    try {
+      const d = await fetchJSON('/perfil/api/notificaciones/sin-leer');
+      if (d.ok && d.count > 0) {
+        badge.textContent = d.count > 99 ? '99+' : d.count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch (e) { /* sin conexion */ }
+  }
+
+  // Renderizar lista
+  async function cargarNotificaciones() {
+    empty.textContent = 'Cargando...';
+    lista.innerHTML = '';
+    lista.appendChild(empty);
+    try {
+      const d = await fetchJSON('/perfil/api/notificaciones');
+      if (!d.ok || !d.notificaciones.length) {
+        empty.textContent = 'No tienes notificaciones recientes.';
+        return;
+      }
+      empty.style.display = 'none';
+      d.notificaciones.forEach(function (n) {
+        const item = document.createElement('a');
+        item.href = n.url_accion || '#';
+        item.style.cssText = `
+          display:flex; gap:10px; padding:10px 14px;
+          border-bottom:1px solid var(--line); text-decoration:none;
+          background:${n.leida ? 'transparent' : 'var(--orange-100)'};
+          cursor:pointer;
+        `;
+        item.onmouseover = () => item.style.background = 'var(--paper)';
+        item.onmouseout  = () => item.style.background = n.leida ? 'transparent' : 'var(--orange-100)';
+
+        const icono = document.createElement('span');
+        icono.style.cssText = 'font-size:1.1rem; flex-shrink:0; margin-top:1px;';
+        icono.textContent = iconoTipo[n.tipo] || 'ℹ️';
+
+        const contenido = document.createElement('div');
+        contenido.style.cssText = 'flex:1; min-width:0;';
+
+        const titulo = document.createElement('div');
+        titulo.style.cssText = `font-size:0.83rem; font-weight:${n.leida ? '400' : '600'};
+          color:var(--ink-900); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;`;
+        titulo.textContent = n.titulo || 'Notificacion';
+        contenido.appendChild(titulo);
+
+        if (n.cuerpo) {
+          const cuerpo = document.createElement('div');
+          cuerpo.style.cssText = 'font-size:0.76rem; color:var(--ink-500); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
+          cuerpo.textContent = n.cuerpo;
+          contenido.appendChild(cuerpo);
+        }
+
+        const fecha = document.createElement('div');
+        fecha.style.cssText = 'font-size:0.7rem; color:var(--ink-500); font-family:var(--font-mono); margin-top:3px;';
+        fecha.textContent = new Date(n.creado_en).toLocaleString('es-CO', { dateStyle:'short', timeStyle:'short' });
+        contenido.appendChild(fecha);
+
+        item.appendChild(icono);
+        item.appendChild(contenido);
+
+        if (!n.leida) {
+          const punto = document.createElement('span');
+          punto.style.cssText = 'width:7px;height:7px;border-radius:50%;background:var(--orange-600);flex-shrink:0;margin-top:6px;';
+          item.appendChild(punto);
+        }
+
+        // Marcar como leida al hacer clic
+        item.addEventListener('click', async function () {
+          if (!n.leida) {
+            await fetchJSON('/perfil/api/notificaciones/' + n._id + '/leer', { method: 'POST' });
+            actualizarBadge();
+          }
+        });
+
+        lista.appendChild(item);
+      });
+    } catch (e) {
+      empty.textContent = 'No se pudieron cargar las notificaciones.';
+      empty.style.display = 'block';
+    }
+  }
+
+  // Toggle panel
+  let panelAbierto = false;
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    panelAbierto = !panelAbierto;
+    panel.style.display = panelAbierto ? 'block' : 'none';
+    if (panelAbierto) cargarNotificaciones();
+  });
+
+  document.addEventListener('click', function () {
+    panelAbierto = false;
+    panel.style.display = 'none';
+  });
+
+  panel.addEventListener('click', (e) => e.stopPropagation());
+
+  document.getElementById('cf-notif-leer-todas').addEventListener('click', async function () {
+    await fetchJSON('/perfil/api/notificaciones/marcar-leidas', { method: 'POST' });
+    cargarNotificaciones();
+    actualizarBadge();
+  });
+
+  document.getElementById('cf-notif-limpiar').addEventListener('click', async function () {
+    await fetchJSON('/perfil/api/notificaciones/limpiar', { method: 'DELETE' });
+    cargarNotificaciones();
+    actualizarBadge();
+  });
+
+  // Actualizar badge al cargar y cada 60s
+  actualizarBadge();
+  setInterval(actualizarBadge, 60000);
+
+  // También actualizar badge cuando llega una notificación por Socket.io
+  window.addEventListener('cf-notif-nueva', actualizarBadge);
+})();
+</script>

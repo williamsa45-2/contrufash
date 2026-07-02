@@ -1,0 +1,68 @@
+<%
+/* Formulario de provision de nuevo tenant + Admin_Empresa inicial (RF-01, SAD 2.1.1). */
+%>
+
+<div style="max-width:620px;">
+  <a href="/super_admin/empresas" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:18px;">
+    ← Volver a empresas
+  </a>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="cf-alert cf-alert-error"><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/super_admin/empresas">
+
+    <div class="cf-card" style="margin-bottom:18px;">
+      <h2 style="margin:0 0 16px; font-size:1rem;">Datos de la empresa</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 16px;">
+        <div class="cf-field" style="grid-column:1/-1;">
+          <label>Nombre de la empresa <span style="color:var(--orange-600);">*</span></label>
+          <input type="text" name="nombre_empresa" required value="<%= typeof formData !== 'undefined' ? (formData.nombre_empresa || '') : '' %>" placeholder="Constructora Andes SAS">
+        </div>
+        <div class="cf-field">
+          <label>NIT</label>
+          <input type="text" name="nit" value="<%= typeof formData !== 'undefined' ? (formData.nit || '') : '' %>" placeholder="900.000.000-1">
+        </div>
+        <div class="cf-field">
+          <label>Nombre del contacto</label>
+          <input type="text" name="contacto_nombre" value="<%= typeof formData !== 'undefined' ? (formData.contacto_nombre || '') : '' %>">
+        </div>
+        <div class="cf-field">
+          <label>Email de contacto</label>
+          <input type="email" name="contacto_email" value="<%= typeof formData !== 'undefined' ? (formData.contacto_email || '') : '' %>">
+        </div>
+        <div class="cf-field">
+          <label>Telefono</label>
+          <input type="tel" name="contacto_telefono" value="<%= typeof formData !== 'undefined' ? (formData.contacto_telefono || '') : '' %>">
+        </div>
+      </div>
+    </div>
+
+    <div class="cf-card" style="margin-bottom:20px;">
+      <h2 style="margin:0 0 4px; font-size:1rem;">Admin de la empresa</h2>
+      <p style="font-size:0.83rem; color:var(--ink-500); margin:0 0 16px;">
+        Este usuario tendra acceso como Admin_Empresa y podra gestionar proyectos y personal.
+      </p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0 16px;">
+        <div class="cf-field" style="grid-column:1/-1;">
+          <label>Nombre del Admin <span style="color:var(--orange-600);">*</span></label>
+          <input type="text" name="admin_nombre" required value="<%= typeof formData !== 'undefined' ? (formData.admin_nombre || '') : '' %>">
+        </div>
+        <div class="cf-field">
+          <label>Email del Admin <span style="color:var(--orange-600);">*</span></label>
+          <input type="email" name="admin_email" required value="<%= typeof formData !== 'undefined' ? (formData.admin_email || '') : '' %>">
+        </div>
+        <div class="cf-field">
+          <label>Contrasena inicial <span style="color:var(--orange-600);">*</span></label>
+          <input type="password" name="admin_password" required minlength="8">
+          <div class="hint">Minimo 8 caracteres.</div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:12px;">
+      Crear empresa y usuario Admin
+    </button>
+  </form>
+</div>

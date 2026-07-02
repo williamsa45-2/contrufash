@@ -1,0 +1,294 @@
+/* ConstruFash - Tema "Industrial / Obra" -------------------------------
+   Paleta: asfalto (sidebar), naranja de seguridad (acento), concreto
+   (fondo de paginas), azul plano (info/Gantt planificado).
+   Tipografia: Oswald (titulos, condensada, vibe de senaletica de obra),
+   Inter (cuerpo), IBM Plex Mono (datos/codigos: tenant_id, fechas, $$). */
+
+:root {
+  --ink-900: #1c1f23;
+  --ink-800: #262a2f;
+  --ink-700: #3d434a;
+  --ink-500: #6b7280;
+  --paper: #f6f4ef;
+  --paper-card: #ffffff;
+  --line: #e4e0d6;
+
+  --orange-600: #e8590c;
+  --orange-700: #c44c0a;
+  --orange-100: #fdeee3;
+
+  --blueprint-500: #2b6cb0;
+  --blueprint-100: #e6eefb;
+
+  --success-600: #2f855a;
+  --success-100: #e7f5ee;
+  --danger-600: #c53030;
+  --danger-100: #fbeaea;
+  --warning-600: #b7791f;
+  --warning-100: #fbf3e0;
+
+  --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink-900);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+  color: var(--ink-900);
+}
+
+.font-mono { font-family: var(--font-mono); }
+
+a { color: var(--blueprint-500); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* --- Firma visual: franja de "cinta de precaucion" ---------------------
+   Usada con moderacion: bajo encabezados de pagina y en el login. Una
+   diagonal repetida en naranja/asfalto, referencia directa a la senaletica
+   de obra, sin saturar el resto de la interfaz. */
+.hazard-stripe {
+  height: 6px;
+  width: 100%;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--orange-600),
+    var(--orange-600) 14px,
+    var(--ink-900) 14px,
+    var(--ink-900) 28px
+  );
+  border-radius: 3px;
+}
+
+/* --- Layout shell -------------------------------------------------- */
+.cf-shell { display: flex; min-height: 100vh; }
+
+.cf-sidebar {
+  width: 248px;
+  flex-shrink: 0;
+  background: var(--ink-900);
+  color: #d8dadd;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.cf-sidebar .brand {
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.cf-sidebar .brand .mark {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+.cf-sidebar .brand .mark span { color: var(--orange-600); }
+.cf-sidebar .brand .tenant {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink-500);
+  margin-top: 4px;
+}
+
+.cf-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+.cf-nav .group-label {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: #6b7178;
+  padding: 14px 20px 6px;
+}
+.cf-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  color: #c7c9cd;
+  border-left: 3px solid transparent;
+  font-size: 0.92rem;
+}
+.cf-nav a:hover { background: rgba(255,255,255,0.04); text-decoration: none; color: #fff; }
+.cf-nav a.active {
+  background: rgba(232,89,12,0.14);
+  border-left-color: var(--orange-600);
+  color: #fff;
+  font-weight: 600;
+}
+
+.cf-sidebar .user-box {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.82rem;
+}
+.cf-sidebar .user-box .role-tag {
+  display: inline-block;
+  margin-top: 4px;
+  background: var(--orange-600);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+.cf-sidebar .user-box a.logout { color: #f3a47a; font-size: 0.8rem; }
+
+.cf-main { flex: 1; min-width: 0; }
+.cf-topbar {
+  background: var(--paper-card);
+  border-bottom: 1px solid var(--line);
+  padding: 16px 28px;
+}
+.cf-content { padding: 24px 28px 48px; max-width: 1180px; }
+
+/* --- Componentes ----------------------------------------------------- */
+.cf-card {
+  background: var(--paper-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.cf-metric {
+  background: var(--paper-card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px 20px;
+}
+.cf-metric .label {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--ink-500);
+}
+.cf-metric .value {
+  font-family: var(--font-mono);
+  font-size: 1.9rem;
+  font-weight: 600;
+  color: var(--ink-900);
+  margin-top: 4px;
+}
+.cf-metric .value.orange { color: var(--orange-600); }
+
+.cf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 9px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.cf-btn:hover { text-decoration: none; }
+.cf-btn-primary { background: var(--orange-600); color: #fff; }
+.cf-btn-primary:hover { background: var(--orange-700); }
+.cf-btn-ghost { background: transparent; border-color: var(--line); color: var(--ink-700); }
+.cf-btn-ghost:hover { border-color: var(--ink-500); }
+.cf-btn-danger { background: var(--danger-100); color: var(--danger-600); }
+.cf-btn-sm { padding: 5px 10px; font-size: 0.78rem; }
+
+.cf-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+.cf-badge-success { background: var(--success-100); color: var(--success-600); }
+.cf-badge-warning { background: var(--warning-100); color: var(--warning-600); }
+.cf-badge-danger { background: var(--danger-100); color: var(--danger-600); }
+.cf-badge-info { background: var(--blueprint-100); color: var(--blueprint-500); }
+.cf-badge-neutral { background: #eee; color: var(--ink-700); }
+
+table.cf-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+table.cf-table th {
+  text-align: left;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-500);
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--line);
+}
+table.cf-table td { padding: 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.cf-table tr:last-child td { border-bottom: none; }
+table.cf-table tbody tr:hover { background: var(--paper); }
+
+.cf-field { margin-bottom: 16px; }
+.cf-field label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-700);
+  margin-bottom: 5px;
+}
+.cf-field input, .cf-field select, .cf-field textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  background: #fff;
+}
+.cf-field input:focus, .cf-field select:focus, .cf-field textarea:focus {
+  outline: 2px solid var(--orange-600);
+  outline-offset: 1px;
+  border-color: var(--orange-600);
+}
+.cf-field .hint { font-size: 0.76rem; color: var(--ink-500); margin-top: 4px; }
+
+.cf-alert { border-radius: 6px; padding: 12px 14px; font-size: 0.88rem; margin-bottom: 18px; }
+.cf-alert-error { background: var(--danger-100); color: var(--danger-600); border: 1px solid #f3c9c9; }
+.cf-alert-success { background: var(--success-100); color: var(--success-600); border: 1px solid #c7e5d4; }
+
+.cf-empty {
+  text-align: center;
+  padding: 48px 20px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--ink-500);
+}
+.cf-empty .font-display { color: var(--ink-700); margin-bottom: 6px; }
+
+.phase-row {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: var(--paper);
+}
+.phase-row .phase-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 860px) {
+  .cf-sidebar { display: none; }
+  .cf-content { padding: 18px; }
+  .phase-row .phase-grid { grid-template-columns: 1fr; }
+}

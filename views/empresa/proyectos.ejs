@@ -1,0 +1,74 @@
+<%
+/* SAD 2.1.2 / RF-06: lista de proyectos del tenant con avance real ponderado. */
+%>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+  <div class="hazard-stripe" style="flex:1; min-width:80px;"></div>
+  <a href="/empresa/proyectos/nuevo" class="cf-btn cf-btn-primary">+ Nuevo proyecto</a>
+</div>
+
+<% if (typeof mensaje !== 'undefined' && mensaje) { %>
+  <div class="cf-alert cf-alert-success"><%= mensaje %></div>
+<% } %>
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="cf-alert cf-alert-error"><%= error %></div>
+<% } %>
+
+<div class="cf-card" style="padding:0; overflow:hidden;">
+  <% if (!proyectos.length) { %>
+    <div class="cf-empty" style="border:none;">
+      <div class="font-display">Aun no hay proyectos</div>
+      Crea el primer proyecto para esta empresa.
+    </div>
+  <% } else { %>
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Proyecto</th>
+          <th>Estado</th>
+          <th>Inicio</th>
+          <th>Fin</th>
+          <th>Fases</th>
+          <th>Avance real</th>
+          <th>Presupuesto</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% proyectos.forEach(function(p) {
+           const badge = {
+             planeado: 'cf-badge-info',
+             en_progreso: 'cf-badge-warning',
+             finalizado: 'cf-badge-success',
+             cancelado: 'cf-badge-danger'
+           }[p.estado] || 'cf-badge-neutral';
+        %>
+          <tr>
+            <td style="font-weight:600;"><%= p.nombre %></td>
+            <td><span class="cf-badge <%= badge %>"><%= p.estado.replace('_',' ') %></span></td>
+            <td style="font-size:0.82rem;"><%= new Date(p.fecha_inicio).toLocaleDateString('es-CO') %></td>
+            <td style="font-size:0.82rem;"><%= new Date(p.fecha_fin).toLocaleDateString('es-CO') %></td>
+            <td style="font-family:var(--font-mono); font-size:0.84rem; text-align:center;">
+              <%= (p.fases || []).length %>
+            </td>
+            <td>
+              <% const avance = p.avance_real || 0; %>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="flex:1; height:6px; background:var(--line); border-radius:3px;">
+                  <div style="width:<%= avance %>%; height:100%; background:var(--orange-600); border-radius:3px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:0.78rem;"><%= avance %>%</span>
+              </div>
+            </td>
+            <td style="font-family:var(--font-mono); font-size:0.82rem;">
+              $<%= (p.presupuesto_total || 0).toLocaleString('es-CO') %>
+            </td>
+            <td>
+              <a href="/empresa/proyectos/<%= p._id %>" class="cf-btn cf-btn-ghost cf-btn-sm">Ver</a>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

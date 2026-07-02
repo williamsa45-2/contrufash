@@ -1,0 +1,201 @@
+<%
+/* RF-12/13: Panel del Almacenista — despacho de materiales con foto obligatoria */
+%>
+
+<div style="margin-bottom:16px;">
+  <div class="hazard-stripe" style="margin-bottom:12px;"></div>
+  <% if (pendientes.length > 0) { %>
+    <span class="cf-badge cf-badge-warning"><%= pendientes.length %> despacho(s) pendiente(s)</span>
+  <% } %>
+</div>
+
+<% if (typeof mensaje !== 'undefined' && mensaje) { %>
+  <div class="cf-alert cf-alert-success"><%= mensaje %></div>
+<% } %>
+<div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+<div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+<!-- Solicitudes aprobadas pendientes de despacho -->
+<% if (!pendientes.length) { %>
+  <div class="cf-empty" style="margin-bottom:24px;">
+    <div class="font-display">Sin despachos pendientes</div>
+    Cuando el Admin apruebe una solicitud apareceran aqui.
+  </div>
+<% } else { %>
+  <div style="margin-bottom:28px;">
+    <h2 style="font-size:1rem; margin:0 0 14px;">Despachos pendientes</h2>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <% pendientes.forEach(function(s) { %>
+        <div class="cf-card" id="sol-<%= s._id %>" style="border-left:4px solid var(--orange-600);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+            <div>
+              <div style="font-weight:600;"><%= s.proyecto_id ? s.proyecto_id.nombre : '—' %></div>
+              <div style="font-size:0.78rem; color:var(--ink-500);">
+                Solicitado por: <%= s.solicitante_id ? s.solicitante_id.nombre : '—' %>
+                &nbsp;·&nbsp;
+                <span class="font-mono"><%= new Date(s.creado_en).toLocaleDateString('es-CO') %></span>
+              </div>
+            </div>
+            <span class="cf-badge cf-badge-warning">Aprobada — lista para despacho</span>
+          </div>
+
+          <!-- Lista de materiales -->
+          <div style="margin-bottom:12px;">
+            <% s.items.forEach(function(it) { %>
+              <div style="display:flex; gap:8px; padding:5px 0; border-bottom:1px solid var(--line); font-size:0.88rem;">
+                <span style="flex:1; font-weight:500;"><%= it.nombre %></span>
+                <span class="font-mono"><%= it.cantidad %> <%= it.unidad %></span>
+              </div>
+            <% }); %>
+          </div>
+
+          <% if (s.observacion_solicitud) { %>
+            <div style="font-size:0.8rem; color:var(--ink-500); margin-bottom:10px;">
+              Obs del Jefe: <%= s.observacion_solicitud %>
+            </div>
+          <% } %>
+
+          <!-- Formulario de despacho -->
+          <div style="background:var(--paper); border-radius:6px; padding:14px;">
+            <div class="cf-field" style="margin-bottom:10px;">
+              <label style="font-size:0.78rem;">
+                Foto de evidencia de entrega
+                <span style="color:var(--orange-600);">* obligatoria</span>
+              </label>
+              <input type="file" class="foto-despacho" data-id="<%= s._id %>"
+                     accept="image/*" capture="environment" style="padding:5px 0;">
+              <div class="preview-despacho" data-id="<%= s._id %>" style="display:none; margin-top:8px;">
+                <img style="max-width:100%; max-height:150px; border-radius:5px; border:1px solid var(--line);">
+              </div>
+            </div>
+            <div class="cf-field" style="margin-bottom:12px;">
+              <label style="font-size:0.78rem;">Observacion del despacho</label>
+              <input type="text" class="obs-despacho" data-id="<%= s._id %>"
+                     placeholder="Ej: Entregado completo — 3 sacos de 50kg c/u">
+            </div>
+            <button class="cf-btn cf-btn-primary btn-despachar" data-id="<%= s._id %>">
+              Confirmar despacho con evidencia
+            </button>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+<% } %>
+
+<!-- Historial reciente -->
+<div class="cf-card">
+  <h2 style="margin:0 0 14px; font-size:1rem;">Historial de despachos</h2>
+  <% if (!historial.length) { %>
+    <div style="font-size:0.86rem; color:var(--ink-500);">Sin historial registrado aun.</div>
+  <% } else { %>
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Proyecto</th>
+          <th>Estado</th>
+          <th>Solicitante</th>
+          <th>Fecha</th>
+          <th>Evidencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% historial.forEach(function(s) { %>
+          <tr>
+            <td style="font-size:0.86rem;"><%= s.proyecto_id ? s.proyecto_id.nombre : '—' %></td>
+            <td>
+              <% if (s.estado === 'despachada') { %>
+                <span class="cf-badge cf-badge-success">Despachada</span>
+              <% } else { %>
+                <span class="cf-badge cf-badge-danger">Rechazada</span>
+              <% } %>
+            </td>
+            <td style="font-size:0.82rem;"><%= s.solicitante_id ? s.solicitante_id.nombre : '—' %></td>
+            <td style="font-family:var(--font-mono); font-size:0.78rem;">
+              <%= new Date(s.creado_en).toLocaleDateString('es-CO') %>
+            </td>
+            <td>
+              <% if (s.evidencia_entrega && s.evidencia_entrega.url) { %>
+                <a href="<%= s.evidencia_entrega.url %>" target="_blank">
+                  <img src="<%= s.evidencia_entrega.url %>"
+                       style="width:48px; height:36px; object-fit:cover; border-radius:4px; border:1px solid var(--line);">
+                </a>
+              <% } else { %>
+                <span style="color:var(--ink-500);">—</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<script>
+(function () {
+  const token = localStorage.getItem('cf_token') || '';
+  const msgOk = document.getElementById('msg-ok');
+  const msgErr = document.getElementById('msg-err');
+
+  // Preview fotos
+  document.querySelectorAll('.foto-despacho').forEach(function (inp) {
+    inp.addEventListener('change', function () {
+      const id = this.dataset.id;
+      const prev = document.querySelector('.preview-despacho[data-id="' + id + '"]');
+      if (!prev) return;
+      const file = this.files[0];
+      if (!file) { prev.style.display = 'none'; return; }
+      const reader = new FileReader();
+      reader.onload = (e) => { prev.querySelector('img').src = e.target.result; prev.style.display = 'block'; };
+      reader.readAsDataURL(file);
+    });
+  });
+
+  // Despachar
+  document.querySelectorAll('.btn-despachar').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = this.dataset.id;
+      const fotoInp = document.querySelector('.foto-despacho[data-id="' + id + '"]');
+      const obsInp  = document.querySelector('.obs-despacho[data-id="' + id + '"]');
+      const foto = fotoInp && fotoInp.files[0];
+
+      msgOk.style.display = 'none';
+      msgErr.style.display = 'none';
+
+      if (!foto) {
+        msgErr.textContent = 'La foto de evidencia es obligatoria para confirmar el despacho (RF-12).';
+        msgErr.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Subiendo evidencia...';
+
+      try {
+        const fd = new FormData();
+        fd.append('foto', foto);
+        fd.append('observacion', obsInp ? obsInp.value.trim() : '');
+
+        const res = await fetch('/api/materiales/' + id + '/despachar', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + token },
+          body: fd,
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al despachar');
+
+        msgOk.textContent = '✓ ' + data.mensaje;
+        msgOk.style.display = 'block';
+        const card = document.getElementById('sol-' + id);
+        if (card) { card.style.opacity = '0.4'; card.style.pointerEvents = 'none'; }
+      } catch (err) {
+        msgErr.textContent = err.message;
+        msgErr.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Confirmar despacho con evidencia';
+      }
+    });
+  });
+})();
+</script>

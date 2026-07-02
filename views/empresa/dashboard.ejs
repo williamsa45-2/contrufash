@@ -1,0 +1,84 @@
+<%
+/* SAD 2.1.2 - Panel del Admin_Empresa: metricas clave + proyectos recientes. */
+%>
+<div style="margin-bottom:20px;">
+  <div class="hazard-stripe" style="margin-bottom:16px;"></div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <a href="/empresa/proyectos/nuevo" class="cf-btn cf-btn-primary">+ Nuevo proyecto</a>
+    <a href="/empresa/personal/nuevo" class="cf-btn cf-btn-ghost">+ Agregar personal</a>
+    <a href="/empresa/reportes" class="cf-btn cf-btn-ghost">📊 Reportes</a>
+  </div>
+</div>
+
+<!-- Metricas -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:28px;">
+  <div class="cf-metric">
+    <div class="label">Proyectos totales</div>
+    <div class="value orange"><%= metricas.totalProyectos %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">En progreso</div>
+    <div class="value"><%= metricas.proyectosActivos %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Personal</div>
+    <div class="value"><%= metricas.totalPersonal %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Presupuesto total</div>
+    <div class="value" style="font-size:1.35rem;">
+      $<%= metricas.presupuestoTotal.toLocaleString('es-CO') %>
+    </div>
+  </div>
+</div>
+
+<!-- Proyectos recientes -->
+<div class="cf-card">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+    <h2 style="margin:0; font-size:1rem;">Proyectos recientes</h2>
+    <a href="/empresa/proyectos" class="cf-btn cf-btn-ghost cf-btn-sm">Ver todos</a>
+  </div>
+
+  <% if (!proyectosRecientes.length) { %>
+    <div class="cf-empty" style="border:none;">
+      <div class="font-display">Sin proyectos aun</div>
+      Crea el primer proyecto con el boton de arriba.
+    </div>
+  <% } else { %>
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Proyecto</th>
+          <th>Estado</th>
+          <th>Inicio</th>
+          <th>Fin</th>
+          <th>Presupuesto</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% proyectosRecientes.forEach(function(p) {
+           const badge = {
+             planeado: 'cf-badge-info',
+             en_progreso: 'cf-badge-warning',
+             finalizado: 'cf-badge-success',
+             cancelado: 'cf-badge-danger'
+           }[p.estado] || 'cf-badge-neutral';
+        %>
+          <tr>
+            <td style="font-weight:600;"><%= p.nombre %></td>
+            <td><span class="cf-badge <%= badge %>"><%= p.estado.replace('_',' ') %></span></td>
+            <td style="font-size:0.82rem;"><%= new Date(p.fecha_inicio).toLocaleDateString('es-CO') %></td>
+            <td style="font-size:0.82rem;"><%= new Date(p.fecha_fin).toLocaleDateString('es-CO') %></td>
+            <td style="font-family:var(--font-mono); font-size:0.82rem;">
+              $<%= (p.presupuesto_total || 0).toLocaleString('es-CO') %>
+            </td>
+            <td>
+              <a href="/empresa/proyectos/<%= p._id %>" class="cf-btn cf-btn-ghost cf-btn-sm">Ver</a>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

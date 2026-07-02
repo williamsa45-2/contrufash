@@ -1,0 +1,123 @@
+<%
+/* Sprint 4: Perfil del usuario — todos los roles */
+const { ROLE_LABELS } = require('../../utils/roles');
+%>
+
+<div style="max-width:560px;">
+  <div class="hazard-stripe" style="margin-bottom:20px;"></div>
+
+  <% if (typeof mensaje !== 'undefined' && mensaje) { %>
+    <div class="cf-alert cf-alert-success"><%= mensaje %></div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="cf-alert cf-alert-error"><%= error %></div>
+  <% } %>
+
+  <!-- Info de rol (solo lectura) -->
+  <div class="cf-card" style="margin-bottom:18px; display:flex; align-items:center; gap:14px;">
+    <div style="width:52px; height:52px; border-radius:50%; background:var(--orange-600);
+         display:flex; align-items:center; justify-content:center;
+         font-family:var(--font-display); font-size:1.4rem; color:#fff; flex-shrink:0;">
+      <%= usuario.nombre ? usuario.nombre.charAt(0).toUpperCase() : '?' %>
+    </div>
+    <div>
+      <div style="font-weight:700; font-size:1.05rem;"><%= usuario.nombre %></div>
+      <div style="font-size:0.82rem; color:var(--ink-500);"><%= usuario.email %></div>
+      <div style="margin-top:4px;">
+        <span class="cf-badge cf-badge-info"><%= ROLE_LABELS[usuario.rol] || usuario.rol %></span>
+        <% if (usuario.tenant_id) { %>
+          <code class="font-mono" style="font-size:0.68rem; color:var(--ink-500); margin-left:6px;">
+            <%= usuario.tenant_id %>
+          </code>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actualizar datos personales -->
+  <div class="cf-card" style="margin-bottom:18px;">
+    <h2 style="margin:0 0 16px; font-size:1rem;">Datos personales</h2>
+    <form method="POST" action="/perfil/actualizar">
+      <div class="cf-field">
+        <label>Nombre completo <span style="color:var(--orange-600);">*</span></label>
+        <input type="text" name="nombre" required value="<%= usuario.nombre || '' %>">
+      </div>
+      <div class="cf-field">
+        <label>Email</label>
+        <input type="email" value="<%= usuario.email %>" disabled
+               style="background:var(--paper); color:var(--ink-500); cursor:not-allowed;">
+        <div class="hint">El email no se puede cambiar desde aquí.</div>
+      </div>
+      <div class="cf-field">
+        <label>Teléfono</label>
+        <input type="tel" name="telefono" value="<%= usuario.telefono || '' %>" placeholder="310 000 0000">
+      </div>
+      <button type="submit" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
+        Guardar cambios
+      </button>
+    </form>
+  </div>
+
+  <!-- Cambiar contraseña -->
+  <div class="cf-card" style="margin-bottom:18px;">
+    <h2 style="margin:0 0 4px; font-size:1rem;">Cambiar contraseña</h2>
+    <p style="font-size:0.82rem; color:var(--ink-500); margin:0 0 16px;">
+      Al cambiar la contraseña se cerrará la sesión actual.
+    </p>
+    <form method="POST" action="/perfil/cambiar-password">
+      <div class="cf-field">
+        <label>Contraseña actual <span style="color:var(--orange-600);">*</span></label>
+        <input type="password" name="password_actual" required autocomplete="current-password">
+      </div>
+      <div class="cf-field">
+        <label>Nueva contraseña <span style="color:var(--orange-600);">*</span></label>
+        <input type="password" name="password_nueva" required minlength="8" autocomplete="new-password"
+               id="pwd-nueva" oninput="checkPwd()">
+        <div class="hint">Mínimo 8 caracteres.</div>
+      </div>
+      <div class="cf-field">
+        <label>Confirmar nueva contraseña <span style="color:var(--orange-600);">*</span></label>
+        <input type="password" name="password_confirmar" required minlength="8" autocomplete="new-password"
+               id="pwd-confirmar" oninput="checkPwd()">
+        <div id="pwd-match-hint" style="font-size:0.76rem; margin-top:4px; display:none;"></div>
+      </div>
+      <button type="submit" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
+        Cambiar contraseña
+      </button>
+    </form>
+  </div>
+
+  <!-- Info de cuenta (solo lectura) -->
+  <div class="cf-card" style="background:var(--paper);">
+    <h2 style="margin:0 0 12px; font-size:0.85rem; color:var(--ink-500);">Información de cuenta</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.82rem;">
+      <div><span style="color:var(--ink-500);">Estado:</span>
+        <span class="cf-badge <%= usuario.estado === 'activo' ? 'cf-badge-success' : 'cf-badge-danger' %>" style="margin-left:4px;">
+          <%= usuario.estado %>
+        </span>
+      </div>
+      <div><span style="color:var(--ink-500);">Registrado:</span>
+        <span class="font-mono" style="font-size:0.76rem; margin-left:4px;">
+          <%= new Date(usuario.creado_en).toLocaleDateString('es-CO') %>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function checkPwd() {
+  const a = document.getElementById('pwd-nueva').value;
+  const b = document.getElementById('pwd-confirmar').value;
+  const hint = document.getElementById('pwd-match-hint');
+  if (!b) { hint.style.display = 'none'; return; }
+  hint.style.display = 'block';
+  if (a === b) {
+    hint.style.color = 'var(--success-600)';
+    hint.textContent = '✓ Las contraseñas coinciden';
+  } else {
+    hint.style.color = 'var(--danger-600)';
+    hint.textContent = '✗ Las contraseñas no coinciden';
+  }
+}
+</script>

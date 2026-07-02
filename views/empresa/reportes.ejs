@@ -1,0 +1,299 @@
+<%
+/* RF-05: Reportes de avance vs planificado, consumo de materiales y costos.
+   Chart.js v4 cargado desde CDN. */
+%>
+
+<div class="hazard-stripe" style="margin-bottom:20px;"></div>
+
+<!-- Metricas globales del tenant -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:28px;">
+  <div class="cf-metric">
+    <div class="label">Presupuesto total</div>
+    <div class="value" style="font-size:1.1rem; font-family:var(--font-mono);">
+      $<%= metricas.totalPresupuesto.toLocaleString('es-CO') %>
+    </div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Avance global promedio</div>
+    <div class="value orange"><%= metricas.avanceGlobal %>%</div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Novedades abiertas</div>
+    <div class="value" style="color:<%= metricas.novedadesAbiertas > 0 ? 'var(--danger-600)' : 'var(--success-600)' %>">
+      <%= metricas.novedadesAbiertas %>
+    </div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Solicitudes pendientes</div>
+    <div class="value" style="color:<%= metricas.solicitudesPendientes > 0 ? 'var(--warning-600)' : 'var(--ink-900)' %>">
+      <%= metricas.solicitudesPendientes %>
+    </div>
+  </div>
+</div>
+
+<!-- Chart: avance por proyecto -->
+<% if (chartProyectos.labels.length) { %>
+<div class="cf-card" style="margin-bottom:24px;">
+  <h2 style="margin:0 0 16px; font-size:1rem;">Avance planificado vs real — todos los proyectos</h2>
+  <div style="position:relative; height:260px;">
+    <canvas id="chart-global"></canvas>
+  </div>
+</div>
+<% } %>
+
+<!-- Selector de proyecto para reporte detallado -->
+<div class="cf-card" style="margin-bottom:24px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+    <h2 style="margin:0; font-size:1rem;">Reporte detallado por proyecto</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <select id="proyecto-sel" style="padding:8px 12px; border:1px solid var(--line); border-radius:6px; font-family:var(--font-body); font-size:0.88rem;">
+        <option value="">— Selecciona un proyecto —</option>
+        <% proyectos.forEach(function(p) { %>
+          <option value="<%= p._id %>" <%= proyectoSelId === p._id.toString() ? 'selected' : '' %>>
+            <%= p.nombre %>
+          </option>
+        <% }); %>
+      </select>
+      <button id="btn-cargar" class="cf-btn cf-btn-primary">Ver reporte</button>
+    </div>
+  </div>
+
+  <!-- Zona de carga del reporte -->
+  <div id="reporte-loading" style="display:none; text-align:center; padding:32px; color:var(--ink-500);">
+    Cargando reporte...
+  </div>
+  <div id="reporte-zona" style="display:none;">
+
+    <!-- Botones de exportacion -->
+    <div style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;">
+      <a id="btn-pdf" href="#" class="cf-btn cf-btn-ghost" target="_blank">
+        ↓ Exportar PDF
+      </a>
+      <a id="btn-excel" href="#" class="cf-btn cf-btn-ghost" target="_blank">
+        ↓ Exportar Excel
+      </a>
+    </div>
+
+    <!-- Metricas del proyecto seleccionado -->
+    <div id="metricas-proyecto" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:20px;"></div>
+
+    <!-- Chart: avance por fase -->
+    <div style="margin-bottom:24px;">
+      <h3 style="font-family:var(--font-display); font-size:0.85rem; letter-spacing:.06em; color:var(--ink-500); margin:0 0 12px;">
+        AVANCE POR FASE
+      </h3>
+      <div style="position:relative; height:240px;">
+        <canvas id="chart-fases"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart: consumo de materiales -->
+    <div style="margin-bottom:24px;">
+      <h3 style="font-family:var(--font-display); font-size:0.85rem; letter-spacing:.06em; color:var(--ink-500); margin:0 0 12px;">
+        TOP 10 MATERIALES POR CONSUMO
+      </h3>
+      <div style="position:relative; height:220px;">
+        <canvas id="chart-materiales"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart: novedades por tipo (doughnut) -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:8px;">
+      <div>
+        <h3 style="font-family:var(--font-display); font-size:0.85rem; letter-spacing:.06em; color:var(--ink-500); margin:0 0 12px;">
+          NOVEDADES POR TIPO
+        </h3>
+        <div style="position:relative; height:180px;">
+          <canvas id="chart-novedades"></canvas>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-family:var(--font-display); font-size:0.85rem; letter-spacing:.06em; color:var(--ink-500); margin:0 0 12px;">
+          COSTOS POR MES
+        </h3>
+        <div style="position:relative; height:180px;">
+          <canvas id="chart-costos"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla: asistencia promedio -->
+    <div style="margin-top:12px;" id="asistencia-zona"></div>
+  </div>
+</div>
+
+<!-- Chart.js desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const CHART_GLOBAL_DATA = <%- JSON.stringify(chartProyectos) %>;
+  const token = localStorage.getItem('cf_token') || '';
+
+  // Paleta del tema
+  const NARANJA = '#E8590C';
+  const AZUL    = '#2B6CB0';
+  const ASFALTO = '#1C1F23';
+  const GRIS    = '#6B7280';
+
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.color = GRIS;
+
+  // ---- Chart global de proyectos ----
+  const ctxGlobal = document.getElementById('chart-global');
+  if (ctxGlobal && CHART_GLOBAL_DATA.labels.length) {
+    new Chart(ctxGlobal, {
+      type: 'bar',
+      data: {
+        labels: CHART_GLOBAL_DATA.labels,
+        datasets: [
+          {
+            label: 'Planificado %',
+            data: CHART_GLOBAL_DATA.planificado,
+            backgroundColor: AZUL + '55',
+            borderColor: AZUL,
+            borderWidth: 1.5,
+            borderRadius: 4,
+          },
+          {
+            label: 'Real %',
+            data: CHART_GLOBAL_DATA.real,
+            backgroundColor: NARANJA + 'CC',
+            borderColor: NARANJA,
+            borderWidth: 1.5,
+            borderRadius: 4,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } },
+          x: { grid: { display: false } },
+        },
+        plugins: { legend: { position: 'top' } },
+      },
+    });
+  }
+
+  // ---- Instancias de charts de detalle (se recrean al cargar proyecto) ----
+  let chartFases = null, chartMats = null, chartNov = null, chartCostos = null;
+
+  function destruirCharts() {
+    [chartFases, chartMats, chartNov, chartCostos].forEach(c => c && c.destroy());
+  }
+
+  async function cargarReporte() {
+    const sel = document.getElementById('proyecto-sel');
+    const id = sel.value;
+    if (!id) return;
+
+    document.getElementById('reporte-loading').style.display = 'block';
+    document.getElementById('reporte-zona').style.display = 'none';
+
+    try {
+      const res = await fetch('/api/reportes/proyecto/' + id, {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.mensaje || 'Error al cargar el reporte');
+
+      // URLs de exportacion
+      document.getElementById('btn-pdf').href = '/empresa/reportes/' + id + '/pdf';
+      document.getElementById('btn-excel').href = '/empresa/reportes/' + id + '/excel';
+
+      // Metricas del proyecto
+      const mp = d.proyecto;
+      document.getElementById('metricas-proyecto').innerHTML = `
+        <div class="cf-metric"><div class="label">Avance real</div><div class="value orange">${mp.avanceReal}%</div></div>
+        <div class="cf-metric"><div class="label">Avance planificado</div><div class="value">${mp.avancePlanificado}%</div></div>
+        <div class="cf-metric"><div class="label">Presupuesto</div><div class="value" style="font-size:1rem;font-family:var(--font-mono);">$${mp.presupuesto.toLocaleString('es-CO')}</div></div>
+        <div class="cf-metric"><div class="label">Costo materiales</div><div class="value" style="font-size:1rem;font-family:var(--font-mono);">$${(mp.costoMateriales||0).toLocaleString('es-CO')}</div></div>
+        <div class="cf-metric"><div class="label">Asistencia promedio</div><div class="value">${d.asistenciaPromedio}%</div></div>
+      `;
+
+      destruirCharts();
+
+      // Chart: avance por fase
+      chartFases = new Chart(document.getElementById('chart-fases'), {
+        type: 'bar',
+        data: {
+          labels: d.avancePorFase.map(f => f.nombre.length > 16 ? f.nombre.slice(0,16)+'…' : f.nombre),
+          datasets: [
+            { label: 'Planificado %', data: d.avancePorFase.map(f => f.planificado),
+              backgroundColor: AZUL + '55', borderColor: AZUL, borderWidth: 1.5, borderRadius: 4 },
+            { label: 'Real %', data: d.avancePorFase.map(f => f.real),
+              backgroundColor: NARANJA + 'CC', borderColor: NARANJA, borderWidth: 1.5, borderRadius: 4 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          indexAxis: 'y',
+          scales: { x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } },
+          plugins: { legend: { position: 'top' } },
+        },
+      });
+
+      // Chart: materiales
+      chartMats = new Chart(document.getElementById('chart-materiales'), {
+        type: 'bar',
+        data: {
+          labels: d.consumoPorMaterial.map(m => m.material.length > 18 ? m.material.slice(0,18)+'…' : m.material),
+          datasets: [
+            { label: 'Entradas', data: d.consumoPorMaterial.map(m => m.entradas),
+              backgroundColor: '#2F855A88', borderColor: '#2F855A', borderWidth: 1, borderRadius: 3 },
+            { label: 'Salidas', data: d.consumoPorMaterial.map(m => m.salidas),
+              backgroundColor: NARANJA + '88', borderColor: NARANJA, borderWidth: 1, borderRadius: 3 },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true }, x: { grid: { display: false } } },
+          plugins: { legend: { position: 'top' } },
+        },
+      });
+
+      // Chart: novedades por tipo
+      const novTipos = Object.keys(d.novedadesPorTipo);
+      chartNov = new Chart(document.getElementById('chart-novedades'), {
+        type: 'doughnut',
+        data: {
+          labels: novTipos,
+          datasets: [{ data: novTipos.map(t => d.novedadesPorTipo[t]),
+            backgroundColor: [NARANJA, AZUL, '#2F855A', '#C53030', GRIS] }],
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { position: 'right', labels: { font: { size: 11 } } } } },
+      });
+
+      // Chart: costos por mes
+      const meses = Object.keys(d.costosPorMes);
+      chartCostos = new Chart(document.getElementById('chart-costos'), {
+        type: 'line',
+        data: {
+          labels: meses,
+          datasets: [{ label: 'Costo materiales COP', data: meses.map(m => d.costosPorMes[m]),
+            borderColor: NARANJA, backgroundColor: NARANJA + '22',
+            fill: true, tension: 0.35, borderWidth: 2, pointRadius: 4 }],
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k' } } },
+          plugins: { legend: { display: false } } },
+      });
+
+      document.getElementById('reporte-loading').style.display = 'none';
+      document.getElementById('reporte-zona').style.display = 'block';
+    } catch (err) {
+      document.getElementById('reporte-loading').style.display = 'none';
+      alert('Error al cargar el reporte: ' + err.message);
+    }
+  }
+
+  document.getElementById('btn-cargar').addEventListener('click', cargarReporte);
+
+  // Cargar automaticamente si viene un proyecto preseleccionado
+  if (document.getElementById('proyecto-sel').value) {
+    cargarReporte();
+  }
+})();
+</script>

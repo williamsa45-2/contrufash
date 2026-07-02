@@ -1,0 +1,46 @@
+<div style="max-width:500px;">
+  <a href="/empresa/personal" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:18px;">
+    ← Volver a personal
+  </a>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="cf-alert cf-alert-error"><%= error %></div>
+  <% } %>
+
+  <div class="cf-card">
+    <h2 style="margin:0 0 16px; font-size:1rem;">Datos del integrante</h2>
+    <form method="POST" action="/empresa/personal">
+      <div class="cf-field">
+        <label>Nombre completo <span style="color:var(--orange-600);">*</span></label>
+        <input type="text" name="nombre" required value="<%= typeof formData !== 'undefined' ? (formData.nombre || '') : '' %>">
+      </div>
+      <div class="cf-field">
+        <label>Correo electronico <span style="color:var(--orange-600);">*</span></label>
+        <input type="email" name="email" required value="<%= typeof formData !== 'undefined' ? (formData.email || '') : '' %>">
+      </div>
+      <div class="cf-field">
+        <label>Rol <span style="color:var(--orange-600);">*</span></label>
+        <select name="rol" required>
+          <option value="">— Selecciona un rol —</option>
+          <% ROLES_ASIGNABLES.forEach(function(r) { %>
+            <option value="<%= r %>" <%= (typeof formData !== 'undefined' && formData.rol === r) ? 'selected' : '' %>>
+              <%= ROLE_LABELS[r] || r %>
+            </option>
+          <% }); %>
+        </select>
+      </div>
+      <div class="cf-field">
+        <label>Contrasena inicial <span style="color:var(--orange-600);">*</span></label>
+        <input type="password" name="password" required minlength="8">
+        <div class="hint">Minimo 8 caracteres. El usuario la puede cambiar despues.</div>
+      </div>
+      <div class="cf-field">
+        <label>Telefono</label>
+        <input type="tel" name="telefono" value="<%= typeof formData !== 'undefined' ? (formData.telefono || '') : '' %>" placeholder="314 000 0000">
+      </div>
+      <button type="submit" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
+        Agregar integrante
+      </button>
+    </form>
+  </div>
+</div>

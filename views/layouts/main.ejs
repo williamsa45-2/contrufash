@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title + ' · ConstruFash' : 'ConstruFash' %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#e8590c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ConstruFash">
+  <link rel="apple-touch-icon" href="/img/icon-192.png">
+</head>
+<body data-tenant-id="<%= (typeof user !== 'undefined' && user && user.tenant_id) ? user.tenant_id : '' %>">
+
+  <!-- Banner offline (Offline-First, SAD DA-03) -->
+  <div id="cf-offline-banner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:9990;
+       background:var(--warning-600); color:#fff; padding:8px 20px; font-size:0.82rem;
+       align-items:center; gap:8px; justify-content:center;">
+    <span>⚠</span>
+    <strong>Sin conexion</strong> — Los datos se guardaran localmente y se sincronizaran cuando vuelva la red.
+  </div>
+
+  <div class="cf-shell">
+    <%- include('../partials/sidebar') %>
+    <div class="cf-main">
+      <%- include('../partials/topbar') %>
+      <div class="cf-content">
+        <%- body %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Socket.io (servido automaticamente por el servidor) -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- Dexie.js (IndexedDB wrapper para modo offline, SAD DA-03) -->
+  <script src="https://unpkg.com/dexie@4.0.8/dist/dexie.min.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="/js/offline.js"></script>
+  <script src="/js/pwa.js"></script>
+</body>
+</html>

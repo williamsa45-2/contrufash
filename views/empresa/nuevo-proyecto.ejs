@@ -1,0 +1,217 @@
+<%
+/* RF-06 / SAD Cap.3.1: Formulario de creacion de proyecto con cronograma
+   de fases dinamico. El Gantt se renderiza en Sprint 1 como una simple barra
+   horizontal (Chart.js) para validar las fechas antes de guardar. */
+%>
+
+<div style="max-width:780px;">
+  <a href="/empresa/proyectos" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:18px;">
+    ← Volver a proyectos
+  </a>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="cf-alert cf-alert-error"><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/empresa/proyectos" id="form-proyecto">
+    <!-- Datos generales -->
+    <div class="cf-card" style="margin-bottom:18px;">
+      <h2 style="margin:0 0 16px; font-size:1rem;">Datos generales</h2>
+      <div class="cf-field">
+        <label>Nombre del proyecto <span style="color:var(--orange-600);">*</span></label>
+        <input type="text" name="nombre" required
+               value="<%= typeof formData !== 'undefined' ? (formData.nombre || '') : '' %>"
+               placeholder="Edificio Andes — Piso 3">
+      </div>
+      <div class="cf-field">
+        <label>Descripcion</label>
+        <textarea name="descripcion" rows="2" style="resize:vertical;"><%= typeof formData !== 'undefined' ? (formData.descripcion || '') : '' %></textarea>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:0 16px;">
+        <div class="cf-field">
+          <label>Fecha de inicio <span style="color:var(--orange-600);">*</span></label>
+          <input type="date" name="fecha_inicio" id="p-inicio" required
+                 value="<%= typeof formData !== 'undefined' ? (formData.fecha_inicio || '') : '' %>">
+        </div>
+        <div class="cf-field">
+          <label>Fecha de fin <span style="color:var(--orange-600);">*</span></label>
+          <input type="date" name="fecha_fin" id="p-fin" required
+                 value="<%= typeof formData !== 'undefined' ? (formData.fecha_fin || '') : '' %>">
+        </div>
+        <div class="cf-field">
+          <label>Presupuesto total (COP) <span style="color:var(--orange-600);">*</span></label>
+          <input type="number" name="presupuesto_total" required min="0" step="1000"
+                 value="<%= typeof formData !== 'undefined' ? (formData.presupuesto_total || '') : '' %>"
+                 placeholder="150000000">
+        </div>
+      </div>
+      <div class="cf-field">
+        <label>Cliente (opcional)</label>
+        <select name="cliente">
+          <option value="">— Sin cliente asignado —</option>
+          <% personal.filter(function(p) { return p.rol === 'cliente'; }).forEach(function(p) { %>
+            <option value="<%= p._id %>"><%= p.nombre %> — <%= p.email %></option>
+          <% }); %>
+        </select>
+        <div class="hint">Solo aparecen usuarios con rol Cliente registrados en tu empresa.</div>
+      </div>
+    </div>
+
+    <!-- Fases del cronograma -->
+    <div class="cf-card" style="margin-bottom:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h2 style="margin:0; font-size:1rem;">Fases del cronograma</h2>
+        <button type="button" class="cf-btn cf-btn-ghost cf-btn-sm" id="btn-add-fase">
+          + Agregar fase
+        </button>
+      </div>
+
+      <div id="fases-container">
+        <!-- Las filas de fases se insertan dinamicamente con JS -->
+      </div>
+
+      <div id="fases-empty" style="text-align:center; padding:20px; color:var(--ink-500); font-size:0.88rem;">
+        Agrega al menos una fase para continuar.
+      </div>
+
+      <!-- Campo oculto que envia el JSON de fases al servidor -->
+      <input type="hidden" name="fases_json" id="fases-json">
+    </div>
+
+    <button type="submit" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:12px;" id="btn-guardar">
+      Crear proyecto
+    </button>
+  </form>
+</div>
+
+<script>
+(function () {
+  // Personal disponible para asignar a fases (renderizado desde el controlador)
+  const PERSONAL = <%- JSON.stringify(personal.filter(function(p) {
+    return p.rol === 'jefe_obra' || p.rol === 'almacenista' || p.rol === 'constructor';
+  }).map(function(p) { return { _id: p._id, nombre: p.nombre, rol: p.rol }; })) %>;
+  const ROLE_LABELS = <%- JSON.stringify(ROLE_LABELS) %>;
+
+  let fases = [];
+
+  function renderFases() {
+    const container = document.getElementById('fases-container');
+    const empty = document.getElementById('fases-empty');
+    empty.style.display = fases.length ? 'none' : 'block';
+    container.innerHTML = '';
+
+    fases.forEach(function (fase, idx) {
+      const row = document.createElement('div');
+      row.className = 'phase-row';
+
+      // Opciones de personal como checkboxes
+      const personalOpts = PERSONAL.map(function (p) {
+        const checked = (fase.personal_asignado || []).includes(String(p._id)) ? 'checked' : '';
+        return `<label style="display:flex; align-items:center; gap:5px; font-size:0.78rem; font-weight:400; cursor:pointer; margin-bottom:3px;">
+          <input type="checkbox" data-idx="${idx}" data-uid="${p._id}" class="chk-personal" ${checked} style="width:auto;">
+          ${p.nombre} <span style="color:var(--ink-500);">(${ROLE_LABELS[p.rol] || p.rol})</span>
+        </label>`;
+      }).join('');
+
+      row.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <strong style="font-family:var(--font-display); font-size:0.82rem; letter-spacing:.05em;">
+            FASE ${idx + 1}
+          </strong>
+          <button type="button" class="cf-btn cf-btn-danger cf-btn-sm" data-del="${idx}">Eliminar</button>
+        </div>
+        <div class="phase-grid">
+          <div class="cf-field" style="margin:0;">
+            <label>Nombre de la fase *</label>
+            <input type="text" data-idx="${idx}" data-field="nombre" required value="${fase.nombre || ''}" placeholder="Ej: Cimentacion">
+          </div>
+          <div class="cf-field" style="margin:0;">
+            <label>Fecha inicio *</label>
+            <input type="date" data-idx="${idx}" data-field="fecha_inicio" required value="${fase.fecha_inicio || ''}">
+          </div>
+          <div class="cf-field" style="margin:0;">
+            <label>Fecha fin *</label>
+            <input type="date" data-idx="${idx}" data-field="fecha_fin" required value="${fase.fecha_fin || ''}">
+          </div>
+          <div class="cf-field" style="margin:0;">
+            <label>Presupuesto (COP)</label>
+            <input type="number" data-idx="${idx}" data-field="presupuesto_asignado" min="0" step="1000"
+                   value="${fase.presupuesto_asignado || 0}">
+          </div>
+        </div>
+        ${PERSONAL.length ? `<div style="margin-top:10px;">
+          <label style="display:block; font-size:0.78rem; font-weight:600; color:var(--ink-700); margin-bottom:5px;">
+            Personal asignado a esta fase
+          </label>
+          ${personalOpts}
+        </div>` : ''}
+      `;
+      container.appendChild(row);
+    });
+
+    // Bind listeners
+    container.querySelectorAll('[data-field]').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        fases[this.dataset.idx][this.dataset.field] = this.value;
+      });
+    });
+
+    container.querySelectorAll('[data-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        fases.splice(Number(this.dataset.del), 1);
+        renderFases();
+      });
+    });
+
+    container.querySelectorAll('.chk-personal').forEach(function (chk) {
+      chk.addEventListener('change', function () {
+        const idx = Number(this.dataset.idx);
+        const uid = this.dataset.uid;
+        fases[idx].personal_asignado = fases[idx].personal_asignado || [];
+        if (this.checked) {
+          if (!fases[idx].personal_asignado.includes(uid)) {
+            fases[idx].personal_asignado.push(uid);
+          }
+        } else {
+          fases[idx].personal_asignado = fases[idx].personal_asignado.filter(function (id) { return id !== uid; });
+        }
+      });
+    });
+  }
+
+  document.getElementById('btn-add-fase').addEventListener('click', function () {
+    // Hereda las fechas del proyecto como sugerencia
+    const pInicio = document.getElementById('p-inicio').value || '';
+    const pFin = document.getElementById('p-fin').value || '';
+    fases.push({
+      nombre: '',
+      fecha_inicio: pInicio,
+      fecha_fin: pFin,
+      presupuesto_asignado: 0,
+      personal_asignado: [],
+    });
+    renderFases();
+    // Scroll al final
+    document.getElementById('fases-container').lastElementChild &&
+      document.getElementById('fases-container').lastElementChild.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  document.getElementById('form-proyecto').addEventListener('submit', function (e) {
+    document.getElementById('fases-json').value = JSON.stringify(fases);
+    if (!fases.length) {
+      e.preventDefault();
+      alert('Agrega al menos una fase al cronograma antes de guardar.');
+      return;
+    }
+    for (var i = 0; i < fases.length; i++) {
+      if (!fases[i].nombre || !fases[i].fecha_inicio || !fases[i].fecha_fin) {
+        e.preventDefault();
+        alert('La fase ' + (i + 1) + ' necesita nombre y fechas.');
+        return;
+      }
+    }
+  });
+
+  renderFases();
+})();
+</script>

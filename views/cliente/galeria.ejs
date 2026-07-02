@@ -1,0 +1,120 @@
+<%
+/* RNF-03 / RF-16: Galería fotográfica por fase para el Cliente */
+const badgeFase = { pendiente:'cf-badge-info', en_progreso:'cf-badge-warning', completada:'cf-badge-success' };
+%>
+
+<a href="/cliente/dashboard" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:16px;">← Mis proyectos</a>
+
+<div class="hazard-stripe" style="margin-bottom:16px;"></div>
+
+<!-- Resumen -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:24px;">
+  <div class="cf-metric">
+    <div class="label">Fases del proyecto</div>
+    <div class="value"><%= fasesConFotos.length %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Total fotos</div>
+    <div class="value orange"><%= totalFotos %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Estado</div>
+    <div class="value" style="font-size:1rem; text-transform:capitalize;">
+      <%= proyecto.estado.replace('_',' ') %>
+    </div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Fin planificado</div>
+    <div class="value font-mono" style="font-size:1rem;">
+      <%= new Date(proyecto.fecha_fin).toLocaleDateString('es-CO') %>
+    </div>
+  </div>
+</div>
+
+<% if (!fasesConFotos.length) { %>
+  <div class="cf-empty">
+    <div class="font-display">Sin evidencias aún</div>
+    Las fotos aparecerán aquí cuando el equipo registre avances.
+  </div>
+<% } else { %>
+  <% fasesConFotos.forEach(function(fase) {
+    const totalFotosFase = (fase.evidencia_url ? 1 : 0) + fase.fotosCumplimiento.length;
+    if (totalFotosFase === 0) return;
+  %>
+    <div class="cf-card" style="margin-bottom:20px;">
+      <!-- Cabecera de la fase -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+        <div>
+          <h2 style="margin:0; font-size:1rem;"><%= fase.nombre %></h2>
+          <div style="font-size:0.78rem; color:var(--ink-500); margin-top:2px;">
+            <%= new Date(fase.fecha_inicio).toLocaleDateString('es-CO') %> →
+            <%= new Date(fase.fecha_fin).toLocaleDateString('es-CO') %>
+            &nbsp;·&nbsp; Avance: <strong><%= fase.avance_real || 0 %>%</strong>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="cf-badge <%= badgeFase[fase.estado] || 'cf-badge-neutral' %>">
+            <%= fase.estado.replace('_',' ') %>
+          </span>
+          <span class="font-mono" style="font-size:0.74rem; color:var(--ink-500);">
+            <%= totalFotosFase %> foto(s)
+          </span>
+        </div>
+      </div>
+
+      <!-- Galería de imágenes -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px;">
+
+        <!-- Foto de avance del Jefe de Obra -->
+        <% if (fase.evidencia_url) { %>
+          <div style="border:1px solid var(--line); border-radius:7px; overflow:hidden;">
+            <a href="<%= fase.evidencia_url %>" target="_blank" data-lightbox="fase-<%= fase._id %>">
+              <img src="<%= fase.evidencia_url %>"
+                   style="width:100%; height:130px; object-fit:cover; display:block;
+                          transition:transform .2s;"
+                   onmouseover="this.style.transform='scale(1.04)'"
+                   onmouseout="this.style.transform='scale(1)'">
+            </a>
+            <div style="padding:8px 10px;">
+              <div style="font-size:0.74rem; font-weight:600; color:var(--ink-700);">Evidencia de avance</div>
+              <span class="cf-badge cf-badge-success" style="font-size:0.62rem;">Jefe de Obra</span>
+            </div>
+          </div>
+        <% } %>
+
+        <!-- Fotos de cumplimiento aprobadas -->
+        <% fase.fotosCumplimiento.forEach(function(foto) { %>
+          <div style="border:1px solid var(--line); border-radius:7px; overflow:hidden;">
+            <a href="<%= foto.foto.url %>" target="_blank">
+              <img src="<%= foto.foto.url %>"
+                   style="width:100%; height:130px; object-fit:cover; display:block;
+                          transition:transform .2s;"
+                   onmouseover="this.style.transform='scale(1.04)'"
+                   onmouseout="this.style.transform='scale(1)'">
+            </a>
+            <div style="padding:8px 10px;">
+              <div style="font-size:0.74rem; font-weight:500; color:var(--ink-700); margin-bottom:3px;
+                   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="<%= foto.descripcion %>">
+                <%= foto.descripcion %>
+              </div>
+              <div style="font-size:0.68rem; color:var(--ink-500);">
+                <%= foto.constructor_id ? foto.constructor_id.nombre : '—' %>
+              </div>
+              <div style="font-family:var(--font-mono); font-size:0.65rem; color:var(--ink-500); margin-top:3px;">
+                <%= new Date(foto.creado_en).toLocaleDateString('es-CO') %>
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  <% }); %>
+
+  <!-- Mensaje si ninguna fase tiene fotos -->
+  <% if (fasesConFotos.every(function(f){ return (f.evidencia_url?1:0)+f.fotosCumplimiento.length===0; })) { %>
+    <div class="cf-empty">
+      <div class="font-display">Sin evidencias aún</div>
+      Las fotos aparecerán aquí cuando el equipo registre avances aprobados.
+    </div>
+  <% } %>
+<% } %>

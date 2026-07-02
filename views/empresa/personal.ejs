@@ -1,0 +1,70 @@
+<%
+/* SAD 2.1.2 - Gestion de personal de la empresa (RF-04). */
+%>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+  <div class="hazard-stripe" style="flex:1; min-width:80px;"></div>
+  <a href="/empresa/personal/nuevo" class="cf-btn cf-btn-primary">+ Agregar integrante</a>
+</div>
+
+<% if (typeof mensaje !== 'undefined' && mensaje) { %>
+  <div class="cf-alert cf-alert-success"><%= mensaje %></div>
+<% } %>
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="cf-alert cf-alert-error"><%= error %></div>
+<% } %>
+
+<div class="cf-card" style="padding:0; overflow:hidden;">
+  <% if (!personal.length) { %>
+    <div class="cf-empty" style="border:none;">
+      <div class="font-display">Aun no hay personal registrado</div>
+      Agrega el primer integrante con el boton superior.
+    </div>
+  <% } else { %>
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Telefono</th>
+          <th>Estado</th>
+          <th>Registrado</th>
+          <th>Accion</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% personal.forEach(function(p) { %>
+          <tr>
+            <td style="font-weight:600;"><%= p.nombre %></td>
+            <td style="font-size:0.84rem;"><%= p.email %></td>
+            <td>
+              <span class="cf-badge cf-badge-info"><%= ROLE_LABELS[p.rol] || p.rol %></span>
+            </td>
+            <td style="font-size:0.82rem;"><%= p.telefono || '—' %></td>
+            <td>
+              <% if (p.estado === 'activo') { %>
+                <span class="cf-badge cf-badge-success">activo</span>
+              <% } else { %>
+                <span class="cf-badge cf-badge-danger">inactivo</span>
+              <% } %>
+            </td>
+            <td style="font-size:0.78rem; color:var(--ink-500);">
+              <%= new Date(p.creado_en).toLocaleDateString('es-CO') %>
+            </td>
+            <td>
+              <form method="POST" action="/empresa/personal/<%= p._id %>/estado" style="display:inline;">
+                <button
+                  type="submit"
+                  class="cf-btn cf-btn-ghost cf-btn-sm"
+                  data-confirm="<%= p.estado === 'activo' ? '¿Desactivar a ' + p.nombre + '?' : '¿Reactivar a ' + p.nombre + '?' %>">
+                  <%= p.estado === 'activo' ? 'Desactivar' : 'Activar' %>
+                </button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

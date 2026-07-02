@@ -1,0 +1,122 @@
+<%
+/* RF-10: Panel del Admin para visualizar y gestionar novedades de campo */
+const tipoLabel = { retraso:'Retraso', bloqueo:'Bloqueo', material:'Material', seguridad:'Seguridad', otro:'Otro' };
+const tipoBadge = { retraso:'cf-badge-warning', bloqueo:'cf-badge-danger', material:'cf-badge-info', seguridad:'cf-badge-danger', otro:'cf-badge-neutral' };
+%>
+
+<div style="margin-bottom:16px;">
+  <div class="hazard-stripe" style="margin-bottom:12px;"></div>
+  <% const abiertas = novedades.filter(function(n) { return n.estado === 'abierta'; }).length; %>
+  <% if (abiertas > 0) { %>
+    <span class="cf-badge cf-badge-danger"><%= abiertas %> novedad(es) abierta(s)</span>
+  <% } %>
+</div>
+
+<% if (typeof mensaje !== 'undefined' && mensaje) { %>
+  <div class="cf-alert cf-alert-success"><%= mensaje %></div>
+<% } %>
+<div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+<div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+<% if (!novedades.length) { %>
+  <div class="cf-empty">
+    <div class="font-display">Sin novedades reportadas</div>
+    El equipo de campo no ha reportado novedades aun.
+  </div>
+<% } else { %>
+  <div style="display:flex; flex-direction:column; gap:14px;">
+    <% novedades.forEach(function(n) { %>
+      <div class="cf-card" id="nov-<%= n._id %>">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span class="cf-badge <%= tipoBadge[n.tipo] || 'cf-badge-neutral' %>">
+              <%= tipoLabel[n.tipo] || n.tipo %>
+            </span>
+            <% if (n.estado === 'gestionada') { %>
+              <span class="cf-badge cf-badge-success">Gestionada</span>
+            <% } else { %>
+              <span class="cf-badge cf-badge-warning">Abierta</span>
+            <% } %>
+          </div>
+          <span class="font-mono" style="font-size:0.72rem; color:var(--ink-500);">
+            <%= new Date(n.creado_en).toLocaleDateString('es-CO') %>
+          </span>
+        </div>
+
+        <div style="font-size:0.82rem; color:var(--ink-500); margin-bottom:6px;">
+          Proyecto: <strong><%= n.proyecto_id ? n.proyecto_id.nombre : '—' %></strong>
+          &nbsp;·&nbsp;
+          Reportado por: <strong><%= n.reportado_por ? n.reportado_por.nombre : '—' %></strong>
+        </div>
+
+        <div style="font-size:0.92rem; margin-bottom:10px;"><%= n.descripcion %></div>
+
+        <% if (n.evidencia && n.evidencia.url) { %>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:0.72rem; color:var(--ink-500); margin-bottom:4px;">Evidencia:</div>
+            <img src="<%= n.evidencia.url %>"
+                 style="max-width:240px; max-height:150px; border-radius:6px; border:1px solid var(--line);">
+          </div>
+        <% } %>
+
+        <% if (n.estado === 'gestionada' && n.respuesta_admin) { %>
+          <div style="background:var(--success-100); border-radius:5px; padding:10px; font-size:0.84rem; color:var(--success-600);">
+            <strong>Tu respuesta:</strong> <%= n.respuesta_admin %>
+            <div style="font-size:0.72rem; margin-top:4px; color:var(--success-600); opacity:0.8;">
+              <%= n.fecha_gestion ? new Date(n.fecha_gestion).toLocaleDateString('es-CO') : '' %>
+            </div>
+          </div>
+        <% } %>
+
+        <!-- Accion gestionar solo si esta abierta -->
+        <% if (n.estado === 'abierta') { %>
+          <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <input type="text"
+                   class="respuesta-input"
+                   data-id="<%= n._id %>"
+                   placeholder="Escribe tu respuesta o accion tomada..."
+                   style="flex:1; min-width:200px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:0.84rem;">
+            <button class="cf-btn cf-btn-primary cf-btn-sm btn-gestionar"
+                    data-id="<%= n._id %>">
+              Marcar gestionada
+            </button>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<script>
+(function () {
+  const msgOk = document.getElementById('msg-ok');
+  const msgErr = document.getElementById('msg-err');
+  const token = localStorage.getItem('cf_token') || '';
+
+  document.querySelectorAll('.btn-gestionar').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      const id = this.dataset.id;
+      const respuesta = document.querySelector('.respuesta-input[data-id="' + id + '"]').value.trim();
+      msgOk.style.display = 'none';
+      msgErr.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/novedades/' + id + '/gestionar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ respuesta }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error');
+        msgOk.textContent = data.mensaje;
+        msgOk.style.display = 'block';
+        const card = document.getElementById('nov-' + id);
+        if (card) card.style.opacity = '0.5';
+      } catch (err) {
+        msgErr.textContent = err.message;
+        msgErr.style.display = 'block';
+      }
+    });
+  });
+})();
+</script>

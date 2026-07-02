@@ -1,0 +1,148 @@
+<%
+/* RF-11: Panel del Admin para aprobar/rechazar solicitudes de materiales */
+const estadoLabel = { pendiente_aprobacion:'Pendiente', aprobada:'Aprobada', rechazada:'Rechazada', despachada:'Despachada' };
+const estadoBadge = { pendiente_aprobacion:'cf-badge-warning', aprobada:'cf-badge-info', rechazada:'cf-badge-danger', despachada:'cf-badge-success' };
+%>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+  <div class="hazard-stripe" style="flex:1; min-width:80px;"></div>
+  <!-- Filtro por estado -->
+  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+    <% ['todos','pendiente_aprobacion','aprobada','despachada','rechazada'].forEach(function(e) { %>
+      <a href="/empresa/materiales<%= e !== 'todos' ? '?estado=' + e : '' %>"
+         class="cf-btn cf-btn-ghost cf-btn-sm <%= estadoFiltro === e ? 'active' : '' %>"
+         style="<%= estadoFiltro === e ? 'background:var(--ink-900); color:#fff; border-color:var(--ink-900);' : '' %>">
+        <%= e === 'todos' ? 'Todos' : estadoLabel[e] %>
+      </a>
+    <% }); %>
+  </div>
+</div>
+
+<% if (typeof mensaje !== 'undefined' && mensaje) { %>
+  <div class="cf-alert cf-alert-success"><%= mensaje %></div>
+<% } %>
+<div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+<div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+<% if (!solicitudes.length) { %>
+  <div class="cf-empty">
+    <div class="font-display">Sin solicitudes</div>
+    <% if (estadoFiltro !== 'todos') { %>No hay solicitudes con estado "<%= estadoLabel[estadoFiltro] || estadoFiltro %>".<% } %>
+  </div>
+<% } else { %>
+  <div style="display:flex; flex-direction:column; gap:14px;">
+    <% solicitudes.forEach(function(s) { %>
+      <div class="cf-card" id="sol-<%= s._id %>">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+          <div>
+            <div style="font-weight:600; font-size:0.92rem;">
+              <%= s.proyecto_id ? s.proyecto_id.nombre : '—' %>
+            </div>
+            <div style="font-size:0.78rem; color:var(--ink-500);">
+              Solicitado por: <strong><%= s.solicitante_id ? s.solicitante_id.nombre : '—' %></strong>
+              &nbsp;·&nbsp;
+              <span class="font-mono"><%= new Date(s.creado_en).toLocaleDateString('es-CO') %></span>
+            </div>
+          </div>
+          <span class="cf-badge <%= estadoBadge[s.estado] || 'cf-badge-neutral' %>">
+            <%= estadoLabel[s.estado] || s.estado %>
+          </span>
+        </div>
+
+        <!-- Items solicitados -->
+        <div style="margin-bottom:12px;">
+          <% s.items.forEach(function(it) { %>
+            <div style="display:flex; gap:8px; padding:4px 0; border-bottom:1px solid var(--line); font-size:0.86rem;">
+              <span style="flex:1;"><%= it.nombre %></span>
+              <span class="font-mono"><%= it.cantidad %> <%= it.unidad %></span>
+            </div>
+          <% }); %>
+        </div>
+
+        <% if (s.observacion_solicitud) { %>
+          <div style="font-size:0.8rem; color:var(--ink-500); margin-bottom:10px;">
+            Obs: <%= s.observacion_solicitud %>
+          </div>
+        <% } %>
+
+        <% if (s.razon_rechazo) { %>
+          <div style="background:var(--danger-100); border-radius:5px; padding:8px; font-size:0.82rem; color:var(--danger-600); margin-bottom:8px;">
+            Razon de rechazo: <%= s.razon_rechazo %>
+          </div>
+        <% } %>
+
+        <% if (s.evidencia_entrega && s.evidencia_entrega.url) { %>
+          <div style="margin-bottom:10px;">
+            <div style="font-size:0.72rem; color:var(--ink-500); margin-bottom:4px;">Foto de entrega (Almacenista):</div>
+            <img src="<%= s.evidencia_entrega.url %>"
+                 style="max-width:220px; max-height:130px; border-radius:6px; border:1px solid var(--line);">
+          </div>
+        <% } %>
+
+        <!-- Acciones solo para pendientes -->
+        <% if (s.estado === 'pendiente_aprobacion') { %>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:4px;">
+            <button class="cf-btn cf-btn-primary cf-btn-sm btn-aprobar"
+                    data-id="<%= s._id %>">
+              ✓ Aprobar
+            </button>
+            <div style="display:flex; gap:6px; flex:1; min-width:200px;">
+              <input type="text" class="razon-rechazo" data-id="<%= s._id %>"
+                     placeholder="Razon del rechazo..."
+                     style="flex:1; padding:6px 10px; border:1px solid var(--line); border-radius:6px; font-size:0.82rem;">
+              <button class="cf-btn cf-btn-danger cf-btn-sm btn-rechazar"
+                      data-id="<%= s._id %>">
+                ✕ Rechazar
+              </button>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<script>
+(function () {
+  const msgOk  = document.getElementById('msg-ok');
+  const msgErr = document.getElementById('msg-err');
+  const token  = localStorage.getItem('cf_token') || '';
+
+  async function accion(id, endpoint, body) {
+    msgOk.style.display = 'none';
+    msgErr.style.display = 'none';
+    try {
+      const res = await fetch('/api/materiales/' + id + '/' + endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error');
+      msgOk.textContent = data.mensaje;
+      msgOk.style.display = 'block';
+      // Ocultar la card despues de actuar
+      const card = document.getElementById('sol-' + id);
+      if (card) card.style.opacity = '0.4';
+    } catch (err) {
+      msgErr.textContent = err.message;
+      msgErr.style.display = 'block';
+    }
+  }
+
+  document.querySelectorAll('.btn-aprobar').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (!confirm('¿Aprobar esta solicitud?')) return;
+      accion(this.dataset.id, 'aprobar', {});
+    });
+  });
+
+  document.querySelectorAll('.btn-rechazar').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const razon = document.querySelector('.razon-rechazo[data-id="' + this.dataset.id + '"]').value.trim();
+      if (!razon) { alert('Escribe la razon del rechazo.'); return; }
+      accion(this.dataset.id, 'rechazar', { razon });
+    });
+  });
+})();
+</script>

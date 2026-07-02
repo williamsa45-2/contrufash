@@ -1,0 +1,224 @@
+<%
+/* RF-04: Pase de asistencia diaria por fase, Offline-First (SAD DA-03) */
+%>
+
+<div style="max-width:640px;">
+  <a href="/jefe_obra/dashboard" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:16px;">
+    ← Mis fases
+  </a>
+
+  <!-- Cabecera -->
+  <div class="cf-card" style="margin-bottom:18px; border-left:4px solid var(--orange-600);">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px;">
+      <div>
+        <div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-500);">PROYECTO</div>
+        <div style="font-weight:600;"><%= proyecto.nombre %></div>
+        <div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-500); margin-top:6px;">FASE</div>
+        <div style="font-size:0.9rem;"><%= fase.nombre %></div>
+      </div>
+      <!-- Selector de fecha -->
+      <div class="cf-field" style="margin:0;">
+        <label style="font-size:0.76rem;">Fecha del pase de lista</label>
+        <input type="date" id="fecha-sel" value="<%= fechaStr %>"
+               style="padding:6px 10px; border:1px solid var(--line); border-radius:6px; font-family:var(--font-mono);"
+               onchange="window.location.href='/jefe_obra/proyectos/<%= proyecto._id %>/fase/<%= fase._id %>/asistencia?fecha=' + this.value">
+      </div>
+    </div>
+  </div>
+
+  <div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+  <div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+  <!-- Advertencia offline -->
+  <div id="offline-warn" style="display:none;" class="cf-alert" style="background:var(--warning-100); border:1px solid var(--warning-600); color:var(--warning-600);">
+    ⚠ Sin conexion — el pase de lista se guardara en el dispositivo y se sincronizara automaticamente.
+  </div>
+
+  <div class="cf-card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+      <h2 style="margin:0; font-size:1rem;">
+        Lista del personal
+        <span class="font-mono" style="font-size:0.72rem; color:var(--ink-500); font-weight:400; margin-left:6px;">
+          <%= fechaStr %>
+        </span>
+      </h2>
+      <% if (asistenciaExistente) { %>
+        <span class="cf-badge cf-badge-success">Ya registrado</span>
+      <% } %>
+    </div>
+
+    <% if (!constructores.length) { %>
+      <div class="cf-empty" style="border:none; padding:24px;">
+        <div class="font-display">Sin personal asignado</div>
+        El Admin debe asignar constructores a esta fase primero.
+      </div>
+    <% } else { %>
+      <div id="lista-asistencia">
+        <% constructores.forEach(function(c, i) {
+          const yaPresente = asistenciaExistente &&
+            asistenciaExistente.registros.some(function(r) {
+              return r.usuario_id.toString() === c._id.toString() && r.presente;
+            });
+          const obsExistente = asistenciaExistente &&
+            (asistenciaExistente.registros.find(function(r) {
+              return r.usuario_id.toString() === c._id.toString();
+            }) || {}).observacion || '';
+        %>
+          <div class="phase-row" style="margin-bottom:10px;">
+            <div style="display:flex; align-items:flex-start; gap:14px;">
+              <!-- Toggle presente/ausente -->
+              <label style="cursor:pointer; display:flex; align-items:center; gap:0; flex-direction:column; min-width:48px; text-align:center;">
+                <input type="checkbox"
+                       class="chk-asistencia"
+                       data-uid="<%= c._id %>"
+                       data-nombre="<%= c.nombre %>"
+                       <%= yaPresente ? 'checked' : '' %>
+                       style="width:22px; height:22px; accent-color:var(--orange-600); cursor:pointer;">
+                <span style="font-size:0.66rem; margin-top:3px; color:var(--ink-500);">
+                  <%= yaPresente ? 'Presente' : 'Ausente' %>
+                </span>
+              </label>
+              <div style="flex:1;">
+                <div style="font-weight:600; font-size:0.92rem;"><%= c.nombre %></div>
+                <div style="font-size:0.76rem; color:var(--ink-500);">Constructor</div>
+                <input type="text"
+                       class="obs-input"
+                       data-uid="<%= c._id %>"
+                       value="<%= obsExistente %>"
+                       placeholder="Observacion (opcional)"
+                       style="margin-top:6px; width:100%; padding:6px 10px; border:1px solid var(--line); border-radius:5px; font-size:0.82rem;">
+              </div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+
+      <!-- Botones -->
+      <div style="display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;">
+        <button id="btn-todos" class="cf-btn cf-btn-ghost cf-btn-sm">✓ Marcar todos</button>
+        <button id="btn-ninguno" class="cf-btn cf-btn-ghost cf-btn-sm">✗ Desmarcar todos</button>
+        <button id="btn-guardar" class="cf-btn cf-btn-primary" style="margin-left:auto;">
+          Guardar asistencia
+        </button>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+(function () {
+  const PROYECTO_ID = '<%= proyecto._id %>';
+  const FASE_ID     = '<%= fase._id %>';
+  const FECHA       = '<%= fechaStr %>';
+
+  const btnGuardar = document.getElementById('btn-guardar');
+  const msgOk = document.getElementById('msg-ok');
+  const msgErr = document.getElementById('msg-err');
+  const offlineWarn = document.getElementById('offline-warn');
+
+  if (!navigator.onLine) offlineWarn.style.display = 'block';
+  window.addEventListener('offline', () => offlineWarn.style.display = 'block');
+  window.addEventListener('online',  () => offlineWarn.style.display = 'none');
+
+  // Marcar/desmarcar todos
+  document.getElementById('btn-todos') && document.getElementById('btn-todos').addEventListener('click', function () {
+    document.querySelectorAll('.chk-asistencia').forEach(function (c) {
+      c.checked = true;
+      c.nextElementSibling.textContent = 'Presente';
+    });
+  });
+  document.getElementById('btn-ninguno') && document.getElementById('btn-ninguno').addEventListener('click', function () {
+    document.querySelectorAll('.chk-asistencia').forEach(function (c) {
+      c.checked = false;
+      c.nextElementSibling.textContent = 'Ausente';
+    });
+  });
+
+  // Actualizar label al cambiar check
+  document.querySelectorAll('.chk-asistencia').forEach(function (chk) {
+    chk.addEventListener('change', function () {
+      this.nextElementSibling.textContent = this.checked ? 'Presente' : 'Ausente';
+    });
+  });
+
+  function construirRegistros() {
+    const registros = [];
+    document.querySelectorAll('.chk-asistencia').forEach(function (chk) {
+      const uid = chk.dataset.uid;
+      const nombre = chk.dataset.nombre;
+      const obsInput = document.querySelector('.obs-input[data-uid="' + uid + '"]');
+      registros.push({
+        usuario_id: uid,
+        nombre: nombre,
+        presente: chk.checked,
+        observacion: obsInput ? obsInput.value.trim() : '',
+      });
+    });
+    return registros;
+  }
+
+  if (btnGuardar) {
+    btnGuardar.addEventListener('click', async function () {
+      msgOk.style.display = 'none';
+      msgErr.style.display = 'none';
+      btnGuardar.disabled = true;
+      btnGuardar.textContent = 'Guardando...';
+
+      const registros = construirRegistros();
+      const payload = {
+        proyecto_id: PROYECTO_ID,
+        fase_id: FASE_ID,
+        fecha: FECHA,
+        registros,
+        timestamp_cliente: new Date().toISOString(),
+      };
+
+      if (!navigator.onLine) {
+        // Modo offline: guardar en Dexie.js (SAD DA-03, regla Write-Through)
+        try {
+          await window.CF.guardarAsistenciaLocal(payload);
+          msgOk.textContent = '✓ Asistencia guardada localmente (se sincronizara cuando haya conexion).';
+          msgOk.style.display = 'block';
+        } catch (err) {
+          msgErr.textContent = 'Error al guardar localmente: ' + err.message;
+          msgErr.style.display = 'block';
+        } finally {
+          btnGuardar.disabled = false;
+          btnGuardar.textContent = 'Guardar asistencia';
+        }
+        return;
+      }
+
+      // Modo online: enviar al servidor directamente
+      try {
+        const token = localStorage.getItem('cf_token') || '';
+        const res = await fetch('/api/asistencia/guardar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error del servidor');
+        msgOk.textContent = '✓ Asistencia guardada correctamente.';
+        msgOk.style.display = 'block';
+      } catch (err) {
+        // Fallback offline si la peticion falla
+        try {
+          await window.CF.guardarAsistenciaLocal(payload);
+          msgOk.textContent = '✓ Sin conexion — asistencia guardada localmente.';
+          msgOk.style.display = 'block';
+        } catch (e) {
+          msgErr.textContent = err.message;
+          msgErr.style.display = 'block';
+        }
+      } finally {
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = 'Guardar asistencia';
+      }
+    });
+  }
+})();
+</script>

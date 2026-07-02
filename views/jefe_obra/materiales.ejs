@@ -1,0 +1,211 @@
+<%
+/* RF-09: Solicitud de materiales por parte del Jefe de Obra */
+%>
+
+<div style="max-width:660px;">
+  <a href="/jefe_obra/dashboard" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:16px;">← Mis fases</a>
+
+  <!-- Info de contexto -->
+  <div class="cf-card" style="margin-bottom:18px; border-left:4px solid var(--orange-600);">
+    <div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-500);">PROYECTO · FASE</div>
+    <div style="font-weight:600;"><%= proyecto.nombre %> — <%= fase.nombre %></div>
+  </div>
+
+  <% if (typeof mensaje !== 'undefined' && mensaje) { %>
+    <div class="cf-alert cf-alert-success"><%= mensaje %></div>
+  <% } %>
+  <div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+  <div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+  <!-- Formulario nueva solicitud -->
+  <div class="cf-card" style="margin-bottom:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h2 style="margin:0; font-size:1rem;">Nueva solicitud</h2>
+      <button type="button" id="btn-add-item" class="cf-btn cf-btn-ghost cf-btn-sm">+ Agregar material</button>
+    </div>
+
+    <div id="items-container"></div>
+    <div id="items-empty" style="text-align:center; padding:16px; color:var(--ink-500); font-size:0.86rem;">
+      Agrega al menos un material para continuar.
+    </div>
+
+    <div class="cf-field" style="margin-top:14px;">
+      <label>Observacion (opcional)</label>
+      <textarea id="obs-input" rows="2" placeholder="Ej: Urgente por tormenta prevista el viernes" style="resize:vertical;"></textarea>
+    </div>
+
+    <button id="btn-solicitar" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
+      Enviar solicitud al Admin
+    </button>
+  </div>
+
+  <!-- Historial de solicitudes de esta fase -->
+  <div class="cf-card">
+    <h2 style="margin:0 0 14px; font-size:1rem;">Solicitudes anteriores</h2>
+    <% if (!solicitudes.length) { %>
+      <div style="color:var(--ink-500); font-size:0.86rem;">No hay solicitudes previas para esta fase.</div>
+    <% } else { %>
+      <% solicitudes.forEach(function(s) {
+        const badge = {
+          pendiente_aprobacion: 'cf-badge-warning',
+          aprobada: 'cf-badge-info',
+          rechazada: 'cf-badge-danger',
+          despachada: 'cf-badge-success'
+        }[s.estado] || 'cf-badge-neutral';
+        const label = {
+          pendiente_aprobacion: 'Pendiente aprobacion',
+          aprobada: 'Aprobada',
+          rechazada: 'Rechazada',
+          despachada: 'Despachada'
+        }[s.estado] || s.estado;
+      %>
+        <div class="phase-row" style="margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+            <span class="font-mono" style="font-size:0.72rem; color:var(--ink-500);">
+              <%= new Date(s.creado_en).toLocaleDateString('es-CO') %>
+            </span>
+            <span class="cf-badge <%= badge %>"><%= label %></span>
+          </div>
+          <div style="font-size:0.84rem;">
+            <% s.items.forEach(function(it) { %>
+              <div style="display:flex; gap:6px; padding:3px 0; border-bottom:1px solid var(--line);">
+                <span style="flex:1;"><%= it.nombre %></span>
+                <span class="font-mono" style="font-size:0.78rem;"><%= it.cantidad %> <%= it.unidad %></span>
+              </div>
+            <% }); %>
+          </div>
+          <% if (s.razon_rechazo) { %>
+            <div style="margin-top:8px; font-size:0.8rem; color:var(--danger-600);">
+              Razon: <%= s.razon_rechazo %>
+            </div>
+          <% } %>
+          <% if (s.evidencia_entrega && s.evidencia_entrega.url) { %>
+            <div style="margin-top:8px;">
+              <div style="font-size:0.72rem; color:var(--ink-500); margin-bottom:4px;">Foto de entrega:</div>
+              <img src="<%= s.evidencia_entrega.url %>"
+                   style="max-width:180px; max-height:100px; border-radius:5px; border:1px solid var(--line);">
+            </div>
+          <% } %>
+        </div>
+      <% }); %>
+    <% } %>
+  </div>
+</div>
+
+<script>
+(function () {
+  const PROYECTO_ID = '<%= proyecto._id %>';
+  const FASE_ID     = '<%= fase._id %>';
+  let items = [];
+
+  function renderItems() {
+    const cont = document.getElementById('items-container');
+    const empty = document.getElementById('items-empty');
+    empty.style.display = items.length ? 'none' : 'block';
+    cont.innerHTML = '';
+
+    items.forEach(function (it, idx) {
+      const row = document.createElement('div');
+      row.className = 'phase-row';
+      row.style.marginBottom = '8px';
+      row.innerHTML = `
+        <div style="display:grid; grid-template-columns:3fr 1fr 1fr auto; gap:8px; align-items:end;">
+          <div class="cf-field" style="margin:0;">
+            <label style="font-size:0.76rem;">Material *</label>
+            <input type="text" data-idx="${idx}" data-field="nombre" value="${it.nombre}"
+                   placeholder="Ej: Cemento Portland" required>
+          </div>
+          <div class="cf-field" style="margin:0;">
+            <label style="font-size:0.76rem;">Cantidad *</label>
+            <input type="number" data-idx="${idx}" data-field="cantidad" value="${it.cantidad || ''}" min="1" required>
+          </div>
+          <div class="cf-field" style="margin:0;">
+            <label style="font-size:0.76rem;">Unidad</label>
+            <select data-idx="${idx}" data-field="unidad">
+              <option value="und" ${it.unidad==='und'?'selected':''}>und</option>
+              <option value="kg"  ${it.unidad==='kg'?'selected':''}>kg</option>
+              <option value="m3"  ${it.unidad==='m3'?'selected':''}>m³</option>
+              <option value="m2"  ${it.unidad==='m2'?'selected':''}>m²</option>
+              <option value="ml"  ${it.unidad==='ml'?'selected':''}>ml</option>
+              <option value="gl"  ${it.unidad==='gl'?'selected':''}>gl</option>
+              <option value="ton" ${it.unidad==='ton'?'selected':''}>ton</option>
+            </select>
+          </div>
+          <button type="button" data-del="${idx}" class="cf-btn cf-btn-danger cf-btn-sm" style="align-self:end; margin-bottom:0; height:38px;">✕</button>
+        </div>`;
+      cont.appendChild(row);
+    });
+
+    cont.querySelectorAll('[data-field]').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        const v = inp.tagName === 'SELECT' ? inp.value : inp.value;
+        items[inp.dataset.idx][inp.dataset.field] = inp.dataset.field === 'cantidad' ? Number(v) : v;
+      });
+    });
+    cont.querySelectorAll('[data-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        items.splice(Number(btn.dataset.del), 1);
+        renderItems();
+      });
+    });
+  }
+
+  document.getElementById('btn-add-item').addEventListener('click', function () {
+    items.push({ nombre: '', cantidad: 1, unidad: 'und' });
+    renderItems();
+  });
+
+  document.getElementById('btn-solicitar').addEventListener('click', async function () {
+    const msgOk = document.getElementById('msg-ok');
+    const msgErr = document.getElementById('msg-err');
+    msgOk.style.display = 'none';
+    msgErr.style.display = 'none';
+
+    if (!items.length) {
+      msgErr.textContent = 'Agrega al menos un material antes de enviar.';
+      msgErr.style.display = 'block';
+      return;
+    }
+    for (var i = 0; i < items.length; i++) {
+      if (!items[i].nombre.trim() || !items[i].cantidad || items[i].cantidad < 1) {
+        msgErr.textContent = 'El material #' + (i + 1) + ' necesita nombre y cantidad valida.';
+        msgErr.style.display = 'block';
+        return;
+      }
+    }
+
+    this.disabled = true;
+    this.textContent = 'Enviando...';
+
+    try {
+      const token = localStorage.getItem('cf_token') || '';
+      const res = await fetch('/api/materiales/solicitar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({
+          proyecto_id: PROYECTO_ID,
+          fase_id: FASE_ID,
+          items_json: JSON.stringify(items),
+          observacion: document.getElementById('obs-input').value.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al enviar');
+
+      msgOk.textContent = '✓ Solicitud enviada. El Admin recibira una notificacion.';
+      msgOk.style.display = 'block';
+      items = [];
+      renderItems();
+      document.getElementById('obs-input').value = '';
+    } catch (err) {
+      msgErr.textContent = err.message;
+      msgErr.style.display = 'block';
+    } finally {
+      this.disabled = false;
+      this.textContent = 'Enviar solicitud al Admin';
+    }
+  });
+
+  renderItems();
+})();
+</script>

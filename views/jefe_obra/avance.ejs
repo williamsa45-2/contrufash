@@ -1,0 +1,179 @@
+<%
+/* RF-08: Actualizar avance de fase + foto de evidencia obligatoria al completar */
+%>
+
+<div style="max-width:580px;">
+  <a href="/jefe_obra/dashboard" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:16px;">
+    ← Mis fases
+  </a>
+
+  <!-- Info de la fase -->
+  <div class="cf-card" style="margin-bottom:18px; border-left:4px solid var(--orange-600);">
+    <div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-500); margin-bottom:4px;">
+      PROYECTO
+    </div>
+    <div style="font-weight:600; font-size:1rem;"><%= proyecto.nombre %></div>
+    <div style="margin-top:8px; font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-500);">FASE</div>
+    <div style="font-size:0.92rem; margin-top:2px;"><%= fase.nombre %></div>
+    <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+      <div style="flex:1; height:8px; background:var(--line); border-radius:4px;">
+        <div id="avance-bar" style="height:100%; width:<%= fase.avance_real %>%; background:var(--orange-600); border-radius:4px; transition:width .3s;"></div>
+      </div>
+      <span id="avance-label" class="font-mono" style="font-size:0.82rem; font-weight:600; min-width:36px;">
+        <%= fase.avance_real %>%
+      </span>
+    </div>
+  </div>
+
+  <div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+  <div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+  <div class="cf-card">
+    <h2 style="margin:0 0 18px; font-size:1rem;">Registrar avance</h2>
+
+    <!-- Slider de avance -->
+    <div class="cf-field">
+      <label>Porcentaje de avance real: <strong id="slider-label"><%= fase.avance_real %>%</strong></label>
+      <input type="range" id="avance-slider" min="0" max="100" step="1"
+             value="<%= fase.avance_real %>"
+             style="width:100%; accent-color:var(--orange-600); cursor:pointer;">
+    </div>
+
+    <!-- Estado de la fase -->
+    <div class="cf-field">
+      <label>Estado de la fase</label>
+      <select id="estado-fase">
+        <option value="pendiente"   <%= fase.estado === 'pendiente'   ? 'selected' : '' %>>Pendiente</option>
+        <option value="en_progreso" <%= fase.estado === 'en_progreso' ? 'selected' : '' %>>En progreso</option>
+        <option value="completada"  <%= fase.estado === 'completada'  ? 'selected' : '' %>>Completada</option>
+      </select>
+    </div>
+
+    <!-- Upload foto evidencia -->
+    <div class="cf-field">
+      <label>
+        Foto de evidencia
+        <span id="foto-req-hint" style="color:var(--orange-600); display:none;"> * obligatoria para completar</span>
+      </label>
+      <input type="file" id="foto-input" accept="image/*" capture="environment"
+             style="padding:6px 0;">
+      <div class="hint">Se comprime automaticamente antes de subir. Max 12 MB.</div>
+
+      <!-- Preview de la foto seleccionada -->
+      <div id="foto-preview" style="display:none; margin-top:10px;">
+        <img id="preview-img" style="max-width:100%; max-height:200px; border-radius:6px; border:1px solid var(--line);">
+      </div>
+
+      <!-- Evidencia ya registrada -->
+      <% if (fase.evidencia_url) { %>
+        <div style="margin-top:10px;">
+          <div style="font-size:0.76rem; color:var(--ink-500); margin-bottom:4px;">Ultima evidencia registrada:</div>
+          <img src="<%= fase.evidencia_url %>" style="max-width:100%; max-height:140px; border-radius:6px; border:1px solid var(--line);">
+        </div>
+      <% } %>
+    </div>
+
+    <button id="btn-guardar" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:12px;">
+      Guardar avance
+    </button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const proyectoId = '<%= proyecto._id %>';
+  const faseId     = '<%= fase._id %>';
+  const slider     = document.getElementById('avance-slider');
+  const sliderLbl  = document.getElementById('slider-label');
+  const avanceBar  = document.getElementById('avance-bar');
+  const avanceLbl  = document.getElementById('avance-label');
+  const estadoSel  = document.getElementById('estado-fase');
+  const fotoInput  = document.getElementById('foto-input');
+  const previewDiv = document.getElementById('foto-preview');
+  const previewImg = document.getElementById('preview-img');
+  const fotoReqHint= document.getElementById('foto-req-hint');
+  const btnGuardar = document.getElementById('btn-guardar');
+  const msgOk      = document.getElementById('msg-ok');
+  const msgErr     = document.getElementById('msg-err');
+
+  // Actualizar labels del slider en vivo
+  slider.addEventListener('input', function () {
+    sliderLbl.textContent = this.value + '%';
+    avanceBar.style.width = this.value + '%';
+    avanceLbl.textContent = this.value + '%';
+  });
+
+  // Mostrar hint de foto obligatoria si selecciona "completada"
+  estadoSel.addEventListener('change', function () {
+    fotoReqHint.style.display = this.value === 'completada' ? 'inline' : 'none';
+  });
+
+  // Preview de la imagen seleccionada
+  fotoInput.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) { previewDiv.style.display = 'none'; return; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewDiv.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function ocultarMensajes() {
+    msgOk.style.display = 'none';
+    msgErr.style.display = 'none';
+  }
+
+  btnGuardar.addEventListener('click', async function () {
+    ocultarMensajes();
+    const avance  = slider.value;
+    const estado  = estadoSel.value;
+    const archivo = fotoInput.files[0];
+
+    if (estado === 'completada' && !archivo && '<%= fase.evidencia_url ? "1" : "" %>' === '') {
+      msgErr.textContent = 'Para completar la fase debes adjuntar una foto de evidencia.';
+      msgErr.style.display = 'block';
+      return;
+    }
+
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = 'Subiendo...';
+
+    try {
+      const fd = new FormData();
+      fd.append('avance_real', avance);
+      fd.append('estado', estado);
+      if (archivo) fd.append('foto', archivo);
+
+      const token = localStorage.getItem('cf_token') || '';
+      const res = await fetch(`/api/jefe_obra/proyectos/${proyectoId}/fase/${faseId}/avance`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.mensaje || 'Error al guardar');
+
+      msgOk.textContent = `Avance guardado: ${data.avance}% — Estado: ${data.estado.replace('_', ' ')}`;
+      msgOk.style.display = 'block';
+      avanceBar.style.width  = data.avance + '%';
+      avanceLbl.textContent  = data.avance + '%';
+      slider.value           = data.avance;
+      sliderLbl.textContent  = data.avance + '%';
+
+      if (data.evidencia_url) {
+        previewImg.src = data.evidencia_url;
+        previewDiv.style.display = 'block';
+      }
+    } catch (err) {
+      msgErr.textContent = err.message;
+      msgErr.style.display = 'block';
+    } finally {
+      btnGuardar.disabled = false;
+      btnGuardar.textContent = 'Guardar avance';
+    }
+  });
+})();
+</script>

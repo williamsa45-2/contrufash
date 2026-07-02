@@ -1,0 +1,89 @@
+<%
+/* SAD 2.1.4 - Panel del Jefe de Obra: vista de las fases donde esta asignado. */
+%>
+
+<div style="margin-bottom:16px;">
+  <div class="hazard-stripe" style="margin-bottom:12px;"></div>
+  <p style="font-size:0.88rem; color:var(--ink-700); margin:0;">
+    Aqui ves las fases de todos los proyectos donde estas asignado.
+    En el Sprint 2 podras registrar asistencia, novedades y evidencias fotograficas.
+  </p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:24px;">
+  <div class="cf-metric">
+    <div class="label">Proyectos</div>
+    <div class="value orange"><%= totalProyectos %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Fases asignadas</div>
+    <div class="value"><%= misFases.length %></div>
+  </div>
+</div>
+
+<div class="cf-card" style="padding:0; overflow:hidden;">
+  <% if (!misFases.length) { %>
+    <div class="cf-empty" style="border:none;">
+      <div class="font-display">Sin fases asignadas</div>
+      El Admin de la empresa te asignara a las fases correspondientes.
+    </div>
+  <% } else { %>
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Proyecto</th>
+          <th>Fase</th>
+          <th>Inicio</th>
+          <th>Fin</th>
+          <th>Estado</th>
+          <th>Avance</th>
+          <th>Acciones Sprint 2</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% misFases.forEach(function(f) {
+           const badge = {
+             pendiente: 'cf-badge-info',
+             en_progreso: 'cf-badge-warning',
+             completada: 'cf-badge-success'
+           }[f.estado] || 'cf-badge-neutral';
+        %>
+          <tr>
+            <td style="font-weight:600;"><%= f.proyecto %></td>
+            <td><%= f.nombre %></td>
+            <td style="font-size:0.82rem;"><%= new Date(f.fecha_inicio).toLocaleDateString('es-CO') %></td>
+            <td style="font-size:0.82rem;"><%= new Date(f.fecha_fin).toLocaleDateString('es-CO') %></td>
+            <td><span class="cf-badge <%= badge %>"><%= f.estado.replace('_',' ') %></span></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <div style="width:60px; height:5px; background:var(--line); border-radius:3px;">
+                  <div style="width:<%= f.avance_real %>%; height:100%; background:var(--orange-600); border-radius:3px;"></div>
+                </div>
+                <span class="font-mono" style="font-size:0.76rem;"><%= f.avance_real %>%</span>
+              </div>
+            </td>
+            <td>
+              <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                <a href="/jefe_obra/proyectos/<%= f.proyectoId %>/fase/<%= f._id %>/avance"
+                   class="cf-btn cf-btn-primary cf-btn-sm">Avance</a>
+                <a href="/jefe_obra/proyectos/<%= f.proyectoId %>/fase/<%= f._id %>/asistencia"
+                   class="cf-btn cf-btn-ghost cf-btn-sm">Lista</a>
+                <a href="/jefe_obra/proyectos/<%= f.proyectoId %>/fase/<%= f._id %>/materiales"
+                   class="cf-btn cf-btn-ghost cf-btn-sm">Materiales</a>
+                <a href="/jefe_obra/proyectos/<%= f.proyectoId %>/fase/<%= f._id %>/novedades"
+                   class="cf-btn cf-btn-ghost cf-btn-sm">Novedades</a>
+              </div>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<div class="cf-card" style="margin-top:20px; background:var(--blueprint-100); border-color:var(--blueprint-500);">
+  <p style="margin:0; font-size:0.86rem; color:var(--blueprint-500);">
+    <strong>Sprint 2:</strong> Aqui apareceran el pase de lista de personal, el boton de reporte de novedad
+    y la carga de evidencias fotograficas por fase (SAD 2.1.4 — RF-08, RF-09, RF-10).
+  </p>
+</div>

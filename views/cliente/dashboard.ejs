@@ -1,0 +1,64 @@
+<%
+/* RF-16: Panel del cliente — lista de proyectos con avance y link a galería */
+%>
+
+<div style="margin-bottom:16px;"><div class="hazard-stripe" style="margin-bottom:12px;"></div></div>
+
+<% if (!proyectos.length) { %>
+  <div class="cf-empty">
+    <div class="font-display">Sin proyectos asociados</div>
+    La empresa vinculará tu cuenta a un proyecto cuando esté listo.
+  </div>
+<% } else { %>
+  <div style="display:flex; flex-direction:column; gap:16px;">
+    <% proyectos.forEach(function(p) {
+      var fases = p.fases || [];
+      var ptf = fases.reduce(function(s,f){return s+(f.presupuesto_asignado||0);},0);
+      var avance = !fases.length ? 0 : (!ptf
+        ? Math.round(fases.reduce(function(s,f){return s+(f.avance_real||0);},0)/fases.length)
+        : Math.round(fases.reduce(function(s,f){return s+(f.avance_real||0)*(f.presupuesto_asignado||0);},0)/ptf));
+      var badge = {planeado:'cf-badge-info',en_progreso:'cf-badge-warning',finalizado:'cf-badge-success',cancelado:'cf-badge-danger'}[p.estado]||'cf-badge-neutral';
+    %>
+      <div class="cf-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+          <div>
+            <h2 style="margin:0 0 4px; font-size:1.05rem;"><%= p.nombre %></h2>
+            <div style="font-size:0.8rem; color:var(--ink-500);">
+              <%= new Date(p.fecha_inicio).toLocaleDateString('es-CO') %> →
+              <%= new Date(p.fecha_fin).toLocaleDateString('es-CO') %>
+            </div>
+          </div>
+          <span class="cf-badge <%= badge %>"><%= p.estado.replace('_',' ') %></span>
+        </div>
+
+        <!-- Barra de avance -->
+        <div style="margin-bottom:6px; font-family:var(--font-mono); font-size:0.78rem; color:var(--ink-700);">
+          Avance: <strong><%= avance %>%</strong>
+        </div>
+        <div style="height:12px; background:var(--line); border-radius:6px; overflow:hidden; margin-bottom:14px;">
+          <div style="height:100%; width:<%= avance %>%; background:var(--orange-600); border-radius:6px;"></div>
+        </div>
+
+        <!-- Resumen de fases -->
+        <div style="margin-bottom:14px;">
+          <% fases.sort(function(a,b){return a.orden-b.orden;}).forEach(function(f) { %>
+            <div style="display:flex; justify-content:space-between; font-size:0.82rem; padding:5px 0; border-bottom:1px solid var(--line);">
+              <span><%= f.nombre %></span>
+              <span class="font-mono"><%= f.avance_real||0 %>%</span>
+            </div>
+          <% }); %>
+        </div>
+
+        <!-- Acciones -->
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <a href="/cliente/proyectos/<%= p._id %>/galeria" class="cf-btn cf-btn-primary cf-btn-sm">
+            📸 Ver galería de evidencias
+          </a>
+          <div style="font-family:var(--font-mono); font-size:0.78rem; color:var(--ink-500); display:flex; align-items:center;">
+            Presupuesto: $<%= (p.presupuesto_total||0).toLocaleString('es-CO') %>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>

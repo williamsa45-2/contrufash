@@ -1,0 +1,63 @@
+<%
+// Mapa de navegacion por rol. Se arma aqui (en vez de un controlador)
+// porque es puramente de presentacion y se necesita en cada vista.
+const nav = {
+  super_admin: [
+    { href: '/super_admin/dashboard', label: 'Resumen' },
+    { href: '/super_admin/empresas', label: 'Empresas' },
+  ],
+  admin_empresa: [
+    { href: '/empresa/dashboard', label: 'Resumen' },
+    { href: '/empresa/proyectos', label: 'Proyectos' },
+    { href: '/empresa/personal', label: 'Personal' },
+    { href: '/empresa/materiales', label: 'Materiales' },
+    { href: '/empresa/novedades', label: 'Novedades' },
+    { href: '/empresa/reportes', label: 'Reportes' },
+  ],
+  jefe_obra: [
+    { href: '/jefe_obra/dashboard', label: 'Mis fases' },
+  ],
+  almacenista: [
+    { href: '/bodega/dashboard', label: 'Bodega' },
+    { href: '/bodega/materiales', label: 'Materiales' },
+    { href: '/bodega/kardex', label: 'Kardex' },
+  ],
+  constructor: [
+    { href: '/construccion/dashboard', label: 'Mis actividades' },
+  ],
+  cliente: [
+    { href: '/cliente/dashboard', label: 'Mis proyectos' },
+  ],
+};
+const rol = (typeof user !== 'undefined' && user) ? user.rol : null;
+const items = nav[rol] || [];
+%>
+<aside class="cf-sidebar">
+  <div class="brand">
+    <div class="mark">Constru<span>Fash</span></div>
+    <% if (rol === 'super_admin') { %>
+      <div class="tenant">acceso global</div>
+    <% } else if (typeof user !== 'undefined' && user && user.tenant_id) { %>
+      <div class="tenant">tenant: <%= user.tenant_id %></div>
+    <% } %>
+  </div>
+
+  <nav class="cf-nav">
+    <div class="group-label">Navegacion</div>
+    <% items.forEach(function(item) { %>
+      <a href="<%= item.href %>" class="<%= (typeof currentPath !== 'undefined' && currentPath.startsWith(item.href)) ? 'active' : '' %>">
+        <%= item.label %>
+      </a>
+    <% }); %>
+    <div class="group-label" style="margin-top:8px;">Cuenta</div>
+    <a href="/perfil" class="<%= (typeof currentPath !== 'undefined' && currentPath === '/perfil') ? 'active' : '' %>">Mi perfil</a>
+  </nav>
+
+  <% if (typeof user !== 'undefined' && user) { %>
+    <div class="user-box">
+      <div style="color:#fff; font-weight:600;"><%= user.nombre %></div>
+      <span class="role-tag"><%= (typeof ROLE_LABELS !== 'undefined' && ROLE_LABELS[user.rol]) || user.rol %></span>
+      <div style="margin-top:10px;"><a class="logout" href="/logout" onclick="localStorage.removeItem('cf_token')">Cerrar sesion</a></div>
+    </div>
+  <% } %>
+</aside>

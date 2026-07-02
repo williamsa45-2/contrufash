@@ -1,0 +1,125 @@
+<%
+/* Sprint 4: Jefe de Obra revisa fotos de cumplimiento enviadas por los constructores */
+const badgeEstado = { pendiente_revision:'cf-badge-warning', aprobada:'cf-badge-success', rechazada:'cf-badge-danger' };
+const labelEstado = { pendiente_revision:'Pendiente', aprobada:'Aprobada', rechazada:'Rechazada' };
+const pendientes  = fotos.filter(function(f) { return f.estado === 'pendiente_revision'; });
+const revisadas   = fotos.filter(function(f) { return f.estado !== 'pendiente_revision'; });
+%>
+
+<div style="max-width:720px;">
+  <a href="/jefe_obra/dashboard" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:16px;">← Mis fases</a>
+
+  <div class="cf-card" style="margin-bottom:18px; border-left:4px solid var(--orange-600);">
+    <div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--ink-500);">PROYECTO · FASE</div>
+    <div style="font-weight:600;"><%= proyecto.nombre %> — <%= fase.nombre %></div>
+  </div>
+
+  <div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+  <div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+  <!-- Pendientes de revisión -->
+  <% if (pendientes.length) { %>
+  <div class="cf-card" style="margin-bottom:22px;">
+    <h2 style="margin:0 0 14px; font-size:1rem;">
+      Pendientes de revisión
+      <span class="cf-badge cf-badge-warning" style="margin-left:8px; vertical-align:middle;"><%= pendientes.length %></span>
+    </h2>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <% pendientes.forEach(function(f) { %>
+        <div class="phase-row" id="foto-<%= f._id %>">
+          <div style="display:flex; gap:14px; flex-wrap:wrap;">
+            <a href="<%= f.foto.url %>" target="_blank" style="flex-shrink:0;">
+              <img src="<%= f.foto.url %>" style="width:140px; height:100px; object-fit:cover; border-radius:6px; border:1px solid var(--line);">
+            </a>
+            <div style="flex:1; min-width:200px;">
+              <div style="font-weight:600; font-size:0.9rem; margin-bottom:3px;"><%= f.descripcion %></div>
+              <div style="font-size:0.78rem; color:var(--ink-500); margin-bottom:8px;">
+                Constructor: <strong><%= f.constructor_id ? f.constructor_id.nombre : '—' %></strong>
+                &nbsp;·&nbsp;
+                <span class="font-mono"><%= new Date(f.creado_en).toLocaleDateString('es-CO') %></span>
+              </div>
+              <div class="cf-field" style="margin-bottom:10px;">
+                <label style="font-size:0.74rem;">Comentario (opcional)</label>
+                <input type="text" class="comentario-input" data-id="<%= f._id %>"
+                       placeholder="Observación para el constructor..."
+                       style="padding:7px 10px; border:1px solid var(--line); border-radius:5px; font-size:0.82rem; width:100%;">
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="cf-btn cf-btn-primary cf-btn-sm btn-aprobar" data-id="<%= f._id %>">
+                  ✓ Aprobar
+                </button>
+                <button class="cf-btn cf-btn-danger cf-btn-sm btn-rechazar" data-id="<%= f._id %>">
+                  ✕ Rechazar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+  <% } else { %>
+    <div class="cf-empty" style="margin-bottom:22px;">
+      <div class="font-display">Sin fotos pendientes</div>
+      Todas las fotos han sido revisadas.
+    </div>
+  <% } %>
+
+  <!-- Revisadas -->
+  <% if (revisadas.length) { %>
+  <div class="cf-card">
+    <h2 style="margin:0 0 14px; font-size:1rem;">Historial revisadas (<%= revisadas.length %>)</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px;">
+      <% revisadas.forEach(function(f) { %>
+        <div style="border:1px solid var(--line); border-radius:7px; overflow:hidden;">
+          <a href="<%= f.foto.url %>" target="_blank">
+            <img src="<%= f.foto.url %>" style="width:100%; height:110px; object-fit:cover; display:block;">
+          </a>
+          <div style="padding:8px 10px;">
+            <div style="font-size:0.76rem; margin-bottom:4px; color:var(--ink-700);">
+              <%= f.constructor_id ? f.constructor_id.nombre : '—' %>
+            </div>
+            <span class="cf-badge <%= badgeEstado[f.estado] %>"><%= labelEstado[f.estado] %></span>
+            <% if (f.comentario) { %>
+              <div style="font-size:0.7rem; color:var(--ink-500); margin-top:5px;">"<%= f.comentario %>"</div>
+            <% } %>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<script>
+(function () {
+  const token = localStorage.getItem('cf_token') || '';
+  const msgOk = document.getElementById('msg-ok');
+  const msgErr = document.getElementById('msg-err');
+
+  async function revisar(id, accion) {
+    msgOk.style.display='none'; msgErr.style.display='none';
+    const comentario = document.querySelector('.comentario-input[data-id="'+id+'"]')?.value.trim() || '';
+    if (accion === 'rechazar' && !comentario) {
+      msgErr.textContent = 'Escribe un comentario indicando qué debe corregir el constructor.';
+      msgErr.style.display = 'block'; return;
+    }
+    try {
+      const res = await fetch('/api/jefe_obra/fotos/'+id+'/revisar', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body: JSON.stringify({ accion, comentario }),
+      });
+      const data = await res.json();
+      if (!res.ok||!data.ok) throw new Error(data.mensaje||'Error');
+      msgOk.textContent = accion === 'aprobar' ? '✓ Foto aprobada.' : '✓ Foto rechazada — constructor notificado.';
+      msgOk.style.display = 'block';
+      const card = document.getElementById('foto-'+id);
+      if (card) { card.style.opacity='0.4'; card.style.pointerEvents='none'; }
+    } catch(err) { msgErr.textContent=err.message; msgErr.style.display='block'; }
+  }
+
+  document.querySelectorAll('.btn-aprobar').forEach(btn => btn.addEventListener('click', () => revisar(btn.dataset.id,'aprobar')));
+  document.querySelectorAll('.btn-rechazar').forEach(btn => btn.addEventListener('click', () => revisar(btn.dataset.id,'rechazar')));
+})();
+</script>

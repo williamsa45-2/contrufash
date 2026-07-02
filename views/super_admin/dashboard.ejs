@@ -1,0 +1,78 @@
+<%
+/* SAD 2.1.1 - Panel global del Super Admin: metricas de salud del sistema,
+   acceso rapido a empresas recientes. */
+%>
+<div style="margin-bottom:20px;">
+  <div class="hazard-stripe" style="margin-bottom:16px;"></div>
+  <a href="/super_admin/empresas/nueva" class="cf-btn cf-btn-primary">+ Nueva empresa</a>
+</div>
+
+<!-- Metricas globales -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:28px;">
+  <div class="cf-metric">
+    <div class="label">Empresas totales</div>
+    <div class="value orange"><%= metricas.totalEmpresas %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Activas</div>
+    <div class="value"><%= metricas.empresasActivas %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Suspendidas</div>
+    <div class="value"><%= metricas.empresasSuspendidas %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Usuarios totales</div>
+    <div class="value"><%= metricas.totalUsuarios %></div>
+  </div>
+  <div class="cf-metric">
+    <div class="label">Proyectos</div>
+    <div class="value"><%= metricas.totalProyectos %></div>
+  </div>
+</div>
+
+<!-- Ultimas empresas registradas -->
+<div class="cf-card">
+  <h2 style="margin:0 0 16px; font-size:1rem;">Ultimas empresas registradas</h2>
+  <% if (!empresasRecientes.length) { %>
+    <div class="cf-empty">
+      <div class="font-display">Sin empresas aun</div>
+      Crea la primera empresa con el boton de arriba.
+    </div>
+  <% } else { %>
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>tenant_id</th>
+          <th>Plan</th>
+          <th>Estado</th>
+          <th>Registro</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% empresasRecientes.forEach(function(e) { %>
+          <tr>
+            <td style="font-weight:600;"><%= e.nombre_empresa %></td>
+            <td><code class="font-mono" style="font-size:0.78rem;"><%= e.tenant_id %></code></td>
+            <td><%= e.plan %></td>
+            <td>
+              <% if (e.estado === 'activo') { %>
+                <span class="cf-badge cf-badge-success">activo</span>
+              <% } else { %>
+                <span class="cf-badge cf-badge-danger">suspendido</span>
+              <% } %>
+            </td>
+            <td style="font-size:0.82rem; color:var(--ink-500);">
+              <%= new Date(e.creado_en).toLocaleDateString('es-CO') %>
+            </td>
+            <td>
+              <a href="/super_admin/empresas" class="cf-btn cf-btn-ghost cf-btn-sm">Ver todo</a>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>

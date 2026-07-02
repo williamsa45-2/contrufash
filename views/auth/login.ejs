@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesion · ConstruFash</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--ink-900);
+      background-image:
+        radial-gradient(circle at 15% 20%, rgba(232,89,12,0.18), transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(43,108,176,0.16), transparent 40%);
+      padding: 24px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--paper-card);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+    }
+    .login-card .pad { padding: 32px 30px 28px; }
+    .login-mark { font-family: var(--font-display); font-size: 1.6rem; color: var(--ink-900); }
+    .login-mark span { color: var(--orange-600); }
+    .login-sub { font-size: 0.85rem; color: var(--ink-500); margin-top: 2px; margin-bottom: 22px; }
+    .login-btn {
+      width: 100%; background: var(--orange-600); color: #fff; border: none;
+      padding: 11px; border-radius: 6px; font-weight: 600; font-size: 0.95rem; cursor: pointer;
+      font-family: var(--font-body);
+    }
+    .login-btn:hover { background: var(--orange-700); }
+    .login-btn:disabled { opacity: 0.6; cursor: progress; }
+    .login-foot { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-500); text-align: center; padding: 14px; }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="hazard-stripe"></div>
+      <div class="pad">
+        <div class="login-mark">Constru<span>Fash</span></div>
+        <div class="login-sub">Gestion y seguimiento de obras civiles</div>
+
+        <div id="login-error" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+        <form id="login-form">
+          <div class="cf-field">
+            <label for="email">Correo electronico</label>
+            <input type="email" id="email" name="email" required autocomplete="email" placeholder="tu@empresa.com">
+          </div>
+          <div class="cf-field">
+            <label for="password">Contrasena</label>
+            <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+          </div>
+          <button type="submit" class="login-btn" id="login-btn">Iniciar sesion</button>
+        </form>
+      </div>
+      <div class="login-foot">ConstruFash v2.1 · ADSO 3142784 · SENA</div>
+    </div>
+  </div>
+
+  <script>
+    window.CF_REDIRECT_HINT = <%- JSON.stringify(redirectTo || null) %>;
+  </script>
+  <script src="/js/auth-client.js"></script>
+</body>
+</html>

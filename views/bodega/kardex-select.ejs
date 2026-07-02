@@ -1,0 +1,32 @@
+<div style="max-width:560px;">
+  <div class="hazard-stripe" style="margin-bottom:20px;"></div>
+  <p style="color:var(--ink-700); font-size:0.9rem; margin-bottom:20px;">
+    Selecciona el proyecto para ver su kardex de materiales.
+  </p>
+
+  <% if (!proyectos.length) { %>
+    <div class="cf-empty">
+      <div class="font-display">Sin proyectos disponibles</div>
+      El Admin debe crear proyectos primero.
+    </div>
+  <% } else { %>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <% proyectos.forEach(function(p) {
+        const badge = {
+          planeado:'cf-badge-info', en_progreso:'cf-badge-warning',
+          finalizado:'cf-badge-success', cancelado:'cf-badge-danger'
+        }[p.estado] || 'cf-badge-neutral';
+      %>
+        <a href="/bodega/kardex/<%= p._id %>" style="text-decoration:none;">
+          <div class="cf-card" style="display:flex; justify-content:space-between; align-items:center;
+               cursor:pointer; transition:border-color .15s;"
+               onmouseover="this.style.borderColor='var(--orange-600)'"
+               onmouseout="this.style.borderColor='var(--line)'">
+            <span style="font-weight:600; font-size:0.95rem;"><%= p.nombre %></span>
+            <span class="cf-badge <%= badge %>"><%= p.estado.replace('_',' ') %></span>
+          </div>
+        </a>
+      <% }); %>
+    </div>
+  <% } %>
+</div>

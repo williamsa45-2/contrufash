@@ -1,0 +1,109 @@
+<%
+/* RF-14/RF-15: Panel completo del Constructor */
+const badgeFase = { pendiente:'cf-badge-info', en_progreso:'cf-badge-warning', completada:'cf-badge-success' };
+%>
+
+<div style="margin-bottom:16px;"><div class="hazard-stripe" style="margin-bottom:12px;"></div></div>
+
+<div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+<div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+<% if (!misFases.length) { %>
+  <div class="cf-empty">
+    <div class="font-display">Sin actividades asignadas</div>
+    El Jefe de Obra te asignará actividades cuando estén listas.
+  </div>
+<% } else { %>
+  <div style="display:flex; flex-direction:column; gap:16px;">
+    <% misFases.forEach(function(f) { %>
+      <div class="cf-card" style="border-left:4px solid <%=
+        f.estado==='completada'?'var(--success-600)':f.estado==='en_progreso'?'var(--orange-600)':'var(--line)'%>;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+          <div>
+            <div style="font-size:0.74rem; font-family:var(--font-mono); color:var(--ink-500);">PROYECTO</div>
+            <div style="font-weight:600;"><%= f.proyectoNombre %></div>
+            <div style="font-size:0.8rem; color:var(--ink-700);"><%= f.nombre %></div>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
+            <span class="cf-badge <%= badgeFase[f.estado]||'cf-badge-neutral' %>"><%= f.estado.replace('_',' ') %></span>
+            <% if (f.fotosPendientes > 0) { %>
+              <span class="cf-badge cf-badge-warning"><%= f.fotosPendientes %> foto(s) pendiente revisión</span>
+            <% } %>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+          <div style="flex:1; height:6px; background:var(--line); border-radius:3px;">
+            <div style="width:<%= f.avance_real||0 %>%; height:100%; background:var(--orange-600); border-radius:3px;"></div>
+          </div>
+          <span class="font-mono" style="font-size:0.76rem; color:var(--ink-500);"><%= f.avance_real||0 %>%</span>
+          <span style="font-size:0.72rem; color:var(--ink-500);">
+            <%= new Date(f.fecha_inicio).toLocaleDateString('es-CO') %> → <%= new Date(f.fecha_fin).toLocaleDateString('es-CO') %>
+          </span>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <a href="/construccion/proyectos/<%= f.proyectoId %>/fase/<%= f._id %>/fotos" class="cf-btn cf-btn-primary cf-btn-sm">
+            📷 Subir foto de cumplimiento
+          </a>
+          <button class="cf-btn cf-btn-ghost cf-btn-sm btn-alerta" data-pid="<%= f.proyectoId %>" data-fid="<%= f._id %>">
+            ⚠ Reportar problema
+          </button>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<div id="modal-alerta" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; align-items:center; justify-content:center;">
+  <div class="cf-card" style="width:100%; max-width:400px; margin:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h2 style="margin:0; font-size:1rem;">Reportar problema al Jefe</h2>
+      <button id="btn-close-alerta" class="cf-btn cf-btn-ghost cf-btn-sm">✕</button>
+    </div>
+    <div class="cf-field">
+      <label>Descripción del problema <span style="color:var(--orange-600);">*</span></label>
+      <textarea id="alerta-msg" rows="3" placeholder="Ej: Falta cemento, herramienta dañada..." style="resize:vertical;"></textarea>
+    </div>
+    <input type="hidden" id="alerta-pid">
+    <input type="hidden" id="alerta-fid">
+    <button id="btn-enviar-alerta" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
+      Enviar alerta
+    </button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const token = localStorage.getItem('cf_token') || '';
+  const msgOk = document.getElementById('msg-ok');
+  const msgErr = document.getElementById('msg-err');
+  document.querySelectorAll('.btn-alerta').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.getElementById('alerta-pid').value = this.dataset.pid;
+      document.getElementById('alerta-fid').value = this.dataset.fid;
+      document.getElementById('alerta-msg').value = '';
+      document.getElementById('modal-alerta').style.display = 'flex';
+    });
+  });
+  document.getElementById('btn-close-alerta').addEventListener('click', function () {
+    document.getElementById('modal-alerta').style.display = 'none';
+  });
+  document.getElementById('modal-alerta').addEventListener('click', function (e) { if (e.target===this) this.style.display='none'; });
+  document.getElementById('btn-enviar-alerta').addEventListener('click', async function () {
+    msgOk.style.display='none'; msgErr.style.display='none';
+    const msg = document.getElementById('alerta-msg').value.trim();
+    if (!msg) { alert('Escribe el problema.'); return; }
+    this.disabled=true; this.textContent='Enviando...';
+    try {
+      const res = await fetch('/api/construccion/alerta', {
+        method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body: JSON.stringify({ proyecto_id: document.getElementById('alerta-pid').value, fase_id: document.getElementById('alerta-fid').value, mensaje: msg }),
+      });
+      const data = await res.json();
+      if (!res.ok||!data.ok) throw new Error(data.mensaje);
+      document.getElementById('modal-alerta').style.display='none';
+      msgOk.textContent='✓ Alerta enviada al Jefe de Obra.'; msgOk.style.display='block';
+    } catch(err) { msgErr.textContent=err.message; msgErr.style.display='block'; }
+    finally { this.disabled=false; this.textContent='Enviar alerta'; }
+  });
+})();
+</script>

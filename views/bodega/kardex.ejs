@@ -1,0 +1,314 @@
+<%
+/* RF-11 / RF-13: Kardex de materiales — saldos actuales + movimientos + ingreso de entrada */
+const tipoLabel = { entrada:'Entrada', salida:'Salida', ajuste_positivo:'Ajuste +', ajuste_negativo:'Ajuste −' };
+const tipoBadge = { entrada:'cf-badge-success', salida:'cf-badge-warning', ajuste_positivo:'cf-badge-info', ajuste_negativo:'cf-badge-danger' };
+%>
+
+<!-- Breadcrumb -->
+<div style="margin-bottom:16px;">
+  <a href="/bodega/kardex" class="cf-btn cf-btn-ghost cf-btn-sm">← Proyectos</a>
+</div>
+
+<div class="hazard-stripe" style="margin-bottom:16px;"></div>
+
+<% if (typeof mensaje !== 'undefined' && mensaje) { %>
+  <div class="cf-alert cf-alert-success"><%= mensaje %></div>
+<% } %>
+<div id="msg-ok" class="cf-alert cf-alert-success" style="display:none;"></div>
+<div id="msg-err" class="cf-alert cf-alert-error" style="display:none;"></div>
+
+<!-- ===== SALDOS ACTUALES ===== -->
+<div class="cf-card" style="margin-bottom:22px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+    <h2 style="margin:0; font-size:1rem;">Saldos actuales</h2>
+    <button id="btn-show-entrada" class="cf-btn cf-btn-primary cf-btn-sm">+ Registrar entrada</button>
+  </div>
+
+  <% if (!saldos.length) { %>
+    <div class="cf-empty" style="border:none; padding:20px;">
+      <div class="font-display">Sin movimientos registrados</div>
+      Registra la primera entrada de material con el boton de arriba.
+    </div>
+  <% } else { %>
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>Unidad</th>
+          <th>Entradas</th>
+          <th>Salidas</th>
+          <th>Saldo</th>
+          <th>Costo total</th>
+          <th>Ajuste</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% saldos.forEach(function(s) { %>
+          <tr>
+            <td style="font-weight:600;"><%= s.material %></td>
+            <td class="font-mono" style="font-size:0.8rem;"><%= s.unidad %></td>
+            <td class="font-mono" style="font-size:0.86rem; color:var(--success-600);">
+              + <%= s.entradas %>
+            </td>
+            <td class="font-mono" style="font-size:0.86rem; color:var(--warning-600);">
+              − <%= s.salidas %>
+            </td>
+            <td>
+              <span class="font-mono" style="font-weight:700; font-size:0.92rem;
+                color:<%= s.saldo < 0 ? 'var(--danger-600)' : s.saldo === 0 ? 'var(--ink-500)' : 'var(--ink-900)' %>;">
+                <%= s.saldo %> <%= s.unidad %>
+              </span>
+              <% if (s.saldo < 0) { %>
+                <span class="cf-badge cf-badge-danger" style="margin-left:6px; font-size:0.62rem;">DEFICIT</span>
+              <% } else if (s.saldo === 0) { %>
+                <span class="cf-badge cf-badge-neutral" style="margin-left:6px; font-size:0.62rem;">AGOTADO</span>
+              <% } %>
+            </td>
+            <td class="font-mono" style="font-size:0.8rem;">
+              $<%= (s.costo_total || 0).toLocaleString('es-CO') %>
+            </td>
+            <td>
+              <button class="cf-btn cf-btn-ghost cf-btn-sm btn-ajuste"
+                      data-material="<%= s.material %>"
+                      data-unidad="<%= s.unidad %>">
+                Ajustar
+              </button>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<!-- ===== MODAL ENTRADA ===== -->
+<div id="modal-entrada" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
+     z-index:9000; align-items:center; justify-content:center;">
+  <div class="cf-card" style="width:100%; max-width:440px; margin:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h2 style="margin:0; font-size:1rem;">Registrar entrada de material</h2>
+      <button id="btn-close-entrada" class="cf-btn cf-btn-ghost cf-btn-sm">✕</button>
+    </div>
+    <div class="cf-field">
+      <label>Material <span style="color:var(--orange-600);">*</span></label>
+      <input type="text" id="ent-material" list="materiales-list" placeholder="Cemento Portland">
+      <datalist id="materiales-list">
+        <% saldos.forEach(function(s) { %><option value="<%= s.material %>"><% }); %>
+      </datalist>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="cf-field">
+        <label>Cantidad <span style="color:var(--orange-600);">*</span></label>
+        <input type="number" id="ent-cantidad" min="0.001" step="0.001" placeholder="50">
+      </div>
+      <div class="cf-field">
+        <label>Unidad</label>
+        <select id="ent-unidad">
+          <option value="und">und</option><option value="kg">kg</option>
+          <option value="m3">m³</option><option value="m2">m²</option>
+          <option value="ml">ml</option><option value="gl">gl</option>
+          <option value="ton">ton</option><option value="saco">saco</option>
+        </select>
+      </div>
+    </div>
+    <div class="cf-field">
+      <label>Costo unitario (COP)</label>
+      <input type="number" id="ent-costo" min="0" step="100" placeholder="25000">
+      <div class="hint">Se usa para el reporte de costos acumulados.</div>
+    </div>
+    <div class="cf-field">
+      <label>Referencia (OC, factura, etc.)</label>
+      <input type="text" id="ent-ref" placeholder="OC-2024-001">
+    </div>
+    <div class="cf-field">
+      <label>Observacion</label>
+      <input type="text" id="ent-obs" placeholder="Proveedor: Construmax">
+    </div>
+    <button id="btn-guardar-entrada" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
+      Guardar entrada
+    </button>
+  </div>
+</div>
+
+<!-- ===== MODAL AJUSTE ===== -->
+<div id="modal-ajuste" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
+     z-index:9000; align-items:center; justify-content:center;">
+  <div class="cf-card" style="width:100%; max-width:400px; margin:20px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h2 style="margin:0; font-size:1rem;">Ajuste de inventario</h2>
+      <button id="btn-close-ajuste" class="cf-btn cf-btn-ghost cf-btn-sm">✕</button>
+    </div>
+    <div class="cf-field">
+      <label>Material</label>
+      <input type="text" id="aj-material" readonly style="background:var(--paper);">
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div class="cf-field">
+        <label>Cantidad</label>
+        <input type="number" id="aj-cantidad" min="0.001" step="0.001">
+      </div>
+      <div class="cf-field">
+        <label>Unidad</label>
+        <input type="text" id="aj-unidad" readonly style="background:var(--paper);">
+      </div>
+    </div>
+    <div class="cf-field">
+      <label>Tipo de ajuste</label>
+      <select id="aj-tipo">
+        <option value="ajuste_positivo">Positivo (agregar al saldo)</option>
+        <option value="ajuste_negativo">Negativo (reducir saldo)</option>
+      </select>
+    </div>
+    <div class="cf-field">
+      <label>Razon del ajuste</label>
+      <input type="text" id="aj-obs" placeholder="Ej: Conteo fisico — merma por humedad">
+    </div>
+    <button id="btn-guardar-ajuste" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
+      Guardar ajuste
+    </button>
+  </div>
+</div>
+
+<!-- ===== HISTORIAL DE MOVIMIENTOS ===== -->
+<div class="cf-card" style="padding:0; overflow:hidden;">
+  <div style="padding:16px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;">
+    <h2 style="margin:0; font-size:1rem;">Historial de movimientos</h2>
+    <span class="font-mono" style="font-size:0.76rem; color:var(--ink-500);">Ultimos <%= movimientos.length %></span>
+  </div>
+  <% if (!movimientos.length) { %>
+    <div class="cf-empty" style="border:none; padding:24px;">Sin movimientos aun.</div>
+  <% } else { %>
+    <table class="cf-table">
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Tipo</th><th>Material</th>
+          <th>Cant.</th><th>Costo unit.</th><th>Referencia</th>
+          <th>Registrado por</th><th>Obs.</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% movimientos.forEach(function(m) { %>
+          <tr>
+            <td class="font-mono" style="font-size:0.76rem; white-space:nowrap;">
+              <%= new Date(m.creado_en).toLocaleDateString('es-CO') %>
+            </td>
+            <td><span class="cf-badge <%= tipoBadge[m.tipo] || 'cf-badge-neutral' %>">
+              <%= tipoLabel[m.tipo] || m.tipo %>
+            </span></td>
+            <td style="font-weight:600; font-size:0.86rem;"><%= m.material %></td>
+            <td class="font-mono" style="font-size:0.84rem;">
+              <%= (m.tipo === 'salida' || m.tipo === 'ajuste_negativo') ? '−' : '+' %>
+              <%= m.cantidad %> <%= m.unidad %>
+            </td>
+            <td class="font-mono" style="font-size:0.78rem;">
+              $<%= (m.costo_unit || 0).toLocaleString('es-CO') %>
+            </td>
+            <td style="font-size:0.78rem;"><%= m.referencia || '—' %></td>
+            <td style="font-size:0.78rem;"><%= m.registrado_por ? m.registrado_por.nombre : '—' %></td>
+            <td style="font-size:0.76rem; color:var(--ink-500);"><%= m.observacion || '' %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<script>
+(function () {
+  const PROYECTO_ID = '<%= proyecto._id %>';
+  const token = localStorage.getItem('cf_token') || '';
+  const msgOk = document.getElementById('msg-ok');
+  const msgErr = document.getElementById('msg-err');
+
+  function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+  function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+
+  document.getElementById('btn-show-entrada').addEventListener('click', () => showModal('modal-entrada'));
+  document.getElementById('btn-close-entrada').addEventListener('click', () => hideModal('modal-entrada'));
+  document.getElementById('btn-close-ajuste').addEventListener('click', () => hideModal('modal-ajuste'));
+
+  document.querySelectorAll('.btn-ajuste').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.getElementById('aj-material').value = this.dataset.material;
+      document.getElementById('aj-unidad').value = this.dataset.unidad;
+      document.getElementById('aj-cantidad').value = '';
+      document.getElementById('aj-obs').value = '';
+      showModal('modal-ajuste');
+    });
+  });
+
+  async function postJSON(url, body) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify(body),
+    });
+    return res.json();
+  }
+
+  document.getElementById('btn-guardar-entrada').addEventListener('click', async function () {
+    msgOk.style.display = 'none'; msgErr.style.display = 'none';
+    const material = document.getElementById('ent-material').value.trim();
+    const cantidad = document.getElementById('ent-cantidad').value;
+    if (!material || !cantidad) {
+      msgErr.textContent = 'Material y cantidad son obligatorios.';
+      msgErr.style.display = 'block'; hideModal('modal-entrada'); return;
+    }
+    this.disabled = true; this.textContent = 'Guardando...';
+    try {
+      const data = await postJSON('/api/kardex/entrada', {
+        proyecto_id: PROYECTO_ID,
+        material,
+        unidad: document.getElementById('ent-unidad').value,
+        cantidad: Number(cantidad),
+        costo_unit: Number(document.getElementById('ent-costo').value) || 0,
+        referencia: document.getElementById('ent-ref').value.trim(),
+        observacion: document.getElementById('ent-obs').value.trim(),
+      });
+      if (!data.ok) throw new Error(data.mensaje);
+      hideModal('modal-entrada');
+      msgOk.textContent = '✓ Entrada registrada. Recarga para ver el saldo actualizado.';
+      msgOk.style.display = 'block';
+      setTimeout(() => location.reload(), 1500);
+    } catch (err) {
+      hideModal('modal-entrada');
+      msgErr.textContent = err.message; msgErr.style.display = 'block';
+    } finally { this.disabled = false; this.textContent = 'Guardar entrada'; }
+  });
+
+  document.getElementById('btn-guardar-ajuste').addEventListener('click', async function () {
+    msgOk.style.display = 'none'; msgErr.style.display = 'none';
+    const cantidad = document.getElementById('aj-cantidad').value;
+    if (!cantidad || Number(cantidad) <= 0) {
+      msgErr.textContent = 'Ingresa una cantidad mayor a 0.';
+      msgErr.style.display = 'block'; hideModal('modal-ajuste'); return;
+    }
+    this.disabled = true; this.textContent = 'Guardando...';
+    try {
+      const data = await postJSON('/api/kardex/ajuste', {
+        proyecto_id: PROYECTO_ID,
+        material: document.getElementById('aj-material').value,
+        unidad: document.getElementById('aj-unidad').value,
+        cantidad: Number(cantidad),
+        tipo: document.getElementById('aj-tipo').value,
+        observacion: document.getElementById('aj-obs').value.trim(),
+      });
+      if (!data.ok) throw new Error(data.mensaje);
+      hideModal('modal-ajuste');
+      msgOk.textContent = '✓ Ajuste registrado.';
+      msgOk.style.display = 'block';
+      setTimeout(() => location.reload(), 1500);
+    } catch (err) {
+      hideModal('modal-ajuste');
+      msgErr.textContent = err.message; msgErr.style.display = 'block';
+    } finally { this.disabled = false; this.textContent = 'Guardar ajuste'; }
+  });
+
+  // Cerrar modales al click fuera
+  ['modal-entrada','modal-ajuste'].forEach(function (id) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      if (e.target === this) hideModal(id);
+    });
+  });
+})();
+</script>
