@@ -127,5 +127,9 @@ const listarParaAdmin = asyncHandler(async (req, res) => {
 module.exports = { listarNovedades, reportar, gestionar, listarParaAdmin };
 
 function faseAsignadaAUsuario(fase, userId) {
-  return (fase.personal_asignado || []).some((id) => id.toString() === userId);
+  return (fase.personal_asignado || []).some((item) => {
+    if (!item) return false;
+    const id = item._id ? item._id : item;
+    return id.toString() === userId;
+  });
 }

@@ -55,14 +55,15 @@
     <% } else { %>
       <div id="lista-asistencia">
         <% constructores.forEach(function(c, i) {
-          const yaPresente = asistenciaExistente &&
-            asistenciaExistente.registros.some(function(r) {
-              return r.usuario_id.toString() === c._id.toString() && r.presente;
-            });
-          const obsExistente = asistenciaExistente &&
-            (asistenciaExistente.registros.find(function(r) {
-              return r.usuario_id.toString() === c._id.toString();
-            }) || {}).observacion || '';
+          const registrosAsistencia = asistenciaExistente && Array.isArray(asistenciaExistente.registros)
+            ? asistenciaExistente.registros
+            : [];
+          const yaPresente = registrosAsistencia.some(function(r) {
+            return r.usuario_id && r.usuario_id.toString() === c._id.toString() && r.presente;
+          });
+          const obsExistente = (registrosAsistencia.find(function(r) {
+            return r.usuario_id && r.usuario_id.toString() === c._id.toString();
+          }) || {}).observacion || '';
         %>
           <div class="phase-row" style="margin-bottom:10px;">
             <div style="display:flex; align-items:flex-start; gap:14px;">

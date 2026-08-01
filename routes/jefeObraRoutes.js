@@ -12,8 +12,11 @@ const asistenciaCtrl = require('../controllers/asistenciaController');
 const materialCtrl = require('../controllers/materialController');
 const novedadCtrl = require('../controllers/novedadController');
 const constructorCtrl = require('../controllers/constructorController');
+const panelCtrl = require('../controllers/panelController');
 
 const jefeAuth = [auth, rbac(ROLES.JEFE_OBRA), tenantScope];
+
+router.get('/dashboard', ...jefeAuth, panelCtrl.jefeObraDashboard);
 
 // --- Avance de fase ---
 router.get('/proyectos/:proyectoId/fase/:faseId/avance', ...jefeAuth, avanceCtrl.mostrarFormAvance);

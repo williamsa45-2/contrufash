@@ -1,4 +1,6 @@
 const cloudinary = require('cloudinary').v2;
+const fs = require('fs').promises;
+const path = require('path');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -16,6 +18,22 @@ cloudinary.config({
  */
 async function subirImagen(buffer, folder, publicId) {
   const base = process.env.CLOUDINARY_FOLDER || 'construfash';
+  const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
+  const cloudinaryApiKey = process.env.CLOUDINARY_API_KEY || '';
+  const cloudinaryApiSecret = process.env.CLOUDINARY_API_SECRET || '';
+
+  const useCloudinary = Boolean(
+    cloudinaryCloudName &&
+    cloudinaryApiKey &&
+    cloudinaryApiSecret &&
+    !cloudinaryCloudName.startsWith('tu_') &&
+    !cloudinaryApiKey.startsWith('tu_') &&
+    !cloudinaryApiSecret.startsWith('tu_')
+  );
+
+  if (!useCloudinary) {
+    return await guardarImagenLocal(buffer, folder, publicId);
+  }
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -25,13 +43,41 @@ async function subirImagen(buffer, folder, publicId) {
         overwrite: true,
         transformation: [{ quality: 'auto', fetch_format: 'auto' }],
       },
-      (error, result) => {
-        if (error) return reject(error);
+      async (error, result) => {
+        if (error) {
+          const fallbackError = error.message || '';
+          const shouldFallback = fallbackError.includes('ENOTFOUND') ||
+            fallbackError.includes('Unknown API key') ||
+            fallbackError.includes('Invalid credentials') ||
+            fallbackError.includes('Invalid signature') ||
+            fallbackError.includes('Missing required parameter');
+          if (shouldFallback) {
+            try {
+              const localResult = await guardarImagenLocal(buffer, folder, publicId);
+              return resolve(localResult);
+            } catch (localErr) {
+              return reject(localErr);
+            }
+          }
+          return reject(error);
+        }
         resolve({ url: result.secure_url, public_id: result.public_id });
       }
     );
     stream.end(buffer);
   });
+}
+
+async function guardarImagenLocal(buffer, folder, publicId) {
+  const uploadDir = path.join(__dirname, '..', 'public', 'uploads', folder);
+  await fs.mkdir(uploadDir, { recursive: true });
+  const filename = `${publicId}.jpg`;
+  const filepath = path.join(uploadDir, filename);
+  await fs.writeFile(filepath, buffer);
+  return {
+    url: `/uploads/${folder}/${filename}`,
+    public_id: `local/${folder}/${publicId}`,
+  };
 }
 
 /**

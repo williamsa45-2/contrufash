@@ -77,13 +77,20 @@ const guardarAsistencia = asyncHandler(async (req, res) => {
   const fin = new Date(fecha);
   fin.setDate(fin.getDate() + 1);
 
+  const registrosNormalizados = Array.isArray(registros)
+    ? registros.map((registro) => ({
+        ...registro,
+        usuario_id: registro.usuario_id || registro.constructor_id || null,
+      }))
+    : [];
+
   const update = {
     tenant_id: req.tenant_id,
     proyecto_id,
     fase_id,
     jefe_id: req.user.user_id,
     fecha: inicio,
-    registros: Array.isArray(registros) ? registros : [],
+    registros: registrosNormalizados,
     sincronizado_desde_offline: false,
   };
 
@@ -115,6 +122,12 @@ const syncOffline = asyncHandler(async (req, res) => {
   for (const item of lote) {
     try {
       const { proyecto_id, fase_id, fecha, registros, timestamp_cliente } = item;
+      const registrosNormalizados = Array.isArray(registros)
+        ? registros.map((registro) => ({
+            ...registro,
+            usuario_id: registro.usuario_id || registro.constructor_id || null,
+          }))
+        : [];
       const proyecto = await Project.findOne({ _id: proyecto_id, tenant_id: req.tenant_id }).lean();
       if (!proyecto) {
         resultados.push({ fecha, fase_id, estado: 'error', detalle: 'Proyecto no encontrado' });
@@ -150,7 +163,7 @@ const syncOffline = asyncHandler(async (req, res) => {
           fase_id,
           jefe_id: req.user.user_id,
           fecha: inicio,
-          registros: Array.isArray(registros) ? registros : [],
+          registros: registrosNormalizados,
           sincronizado_desde_offline: true,
           timestamp_cliente: timestamp_cliente ? new Date(timestamp_cliente) : null,
         },
@@ -197,5 +210,9 @@ const historial = asyncHandler(async (req, res) => {
 module.exports = { mostrarAsistencia, guardarAsistencia, syncOffline, historial };
 
 function faseAsignadaAUsuario(fase, userId) {
-  return (fase.personal_asignado || []).some((id) => id.toString() === userId);
+  return (fase.personal_asignado || []).some((item) => {
+    if (!item) return false;
+    const id = item._id ? item._id : item;
+    return id.toString() === userId;
+  });
 }
