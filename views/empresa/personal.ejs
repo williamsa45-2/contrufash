@@ -53,6 +53,9 @@
               <%= new Date(p.creado_en).toLocaleDateString('es-CO') %>
             </td>
             <td>
+              <a href="/empresa/personal/<%= p._id %>/editar" class="cf-btn cf-btn-ghost cf-btn-sm">
+                Editar
+              </a>
               <form method="POST" action="/empresa/personal/<%= p._id %>/estado" style="display:inline;">
                 <button
                   type="submit"

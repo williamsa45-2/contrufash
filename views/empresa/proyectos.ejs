@@ -63,7 +63,8 @@
             <td style="font-family:var(--font-mono); font-size:0.82rem;">
               $<%= (p.presupuesto_total || 0).toLocaleString('es-CO') %>
             </td>
-            <td>
+            <td style="white-space:nowrap;">
+              <a href="/empresa/proyectos/<%= p._id %>/editar" class="cf-btn cf-btn-ghost cf-btn-sm">Editar</a>
               <a href="/empresa/proyectos/<%= p._id %>" class="cf-btn cf-btn-ghost cf-btn-sm">Ver</a>
             </td>
           </tr>

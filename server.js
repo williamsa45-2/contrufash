@@ -13,6 +13,7 @@ const { verificarToken } = require('./utils/jwt');
 const { ROLE_HOME, ROLE_LABELS } = require('./utils/roles');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 
+const landingRoutes      = require('./routes/landingRoutes');
 const authRoutes        = require('./routes/authRoutes');
 const superAdminRoutes  = require('./routes/superAdminRoutes');
 const empresaRoutes     = require('./routes/empresaRoutes');
@@ -50,7 +51,9 @@ app.use((req, res, next) => {
 });
 
 // --- Rutas ---
-app.get('/', (req, res) => {
+// La raiz muestra la landing publica de ConstruFash. Si ya hay una sesion
+// valida (cookie con JWT), se redirige directo al panel del rol.
+app.get('/', (req, res, next) => {
   const token = req.cookies && req.cookies.token;
   if (token) {
     try {
@@ -60,9 +63,10 @@ app.get('/', (req, res) => {
       res.clearCookie('token');
     }
   }
-  res.redirect('/login');
+  next();
 });
 
+app.use('/', landingRoutes);
 app.use('/', authRoutes);
 app.use('/super_admin', superAdminRoutes);
 app.use('/empresa', empresaRoutes);

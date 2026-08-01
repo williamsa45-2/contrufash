@@ -49,6 +49,23 @@ const projectSchema = new Schema(
     },
     cliente: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     creado_por: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+
+    // --- Vitrina publica (Landing page) -----------------------------
+    // Un proyecto solo aparece en el portafolio publico si la empresa
+    // marca publico=true de forma explicita (aislamiento por defecto,
+    // ningun dato de tenant se expone sin consentimiento).
+    publico: { type: Boolean, default: false, index: true },
+    categoria: {
+      type: String,
+      enum: ['residencial', 'comercial', 'industrial'],
+      default: 'residencial',
+    },
+    ubicacion: { type: String, trim: true, default: '' },
+    area_m2: { type: Number, min: 0, default: null },
+    imagen_portada: {
+      url: { type: String, default: null },
+      public_id: { type: String, default: null },
+    },
   },
   { timestamps: { createdAt: 'creado_en', updatedAt: 'actualizado_en' } }
 );

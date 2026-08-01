@@ -22,11 +22,15 @@ router.get('/dashboard', empresaCtrl.dashboard);
 router.get('/personal', personalCtrl.listar);
 router.get('/personal/nuevo', personalCtrl.mostrarFormulario);
 router.post('/personal', personalCtrl.crear);
+router.get('/personal/:id/editar', personalCtrl.mostrarFormularioEdicion);
+router.post('/personal/:id/editar', personalCtrl.editar);
 router.post('/personal/:id/estado', personalCtrl.cambiarEstado);
 
 router.get('/proyectos', proyectoCtrl.listar);
 router.get('/proyectos/nuevo', proyectoCtrl.mostrarFormulario);
 router.post('/proyectos', proyectoCtrl.crear);
+router.get('/proyectos/:id/editar', proyectoCtrl.mostrarFormularioEdicion);
+router.post('/proyectos/:id/editar', proyectoCtrl.editar);
 router.get('/proyectos/:id', proyectoCtrl.detalle);
 
 // Sprint 2 — Aprobacion de materiales

@@ -4,6 +4,8 @@
    horizontal (Chart.js) para validar las fechas antes de guardar. */
 %>
 
+<% const editandoActual = typeof editando !== 'undefined' && editando; %>
+
 <div style="max-width:780px;">
   <a href="/empresa/proyectos" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:18px;">
     ← Volver a proyectos
@@ -13,7 +15,7 @@
     <div class="cf-alert cf-alert-error"><%= error %></div>
   <% } %>
 
-  <form method="POST" action="/empresa/proyectos" id="form-proyecto">
+  <form method="POST" action="<%= editandoActual ? '/empresa/proyectos/' + formData._id + '/editar' : '/empresa/proyectos' %>" id="form-proyecto">
     <!-- Datos generales -->
     <div class="cf-card" style="margin-bottom:18px;">
       <h2 style="margin:0 0 16px; font-size:1rem;">Datos generales</h2>
@@ -50,7 +52,7 @@
         <select name="cliente">
           <option value="">— Sin cliente asignado —</option>
           <% personal.filter(function(p) { return p.rol === 'cliente'; }).forEach(function(p) { %>
-            <option value="<%= p._id %>"><%= p.nombre %> — <%= p.email %></option>
+            <option value="<%= p._id %>" <%= String(formData.cliente || '') === String(p._id) ? 'selected' : '' %>><%= p.nombre %> — <%= p.email %></option>
           <% }); %>
         </select>
         <div class="hint">Solo aparecen usuarios con rol Cliente registrados en tu empresa.</div>
@@ -79,7 +81,7 @@
     </div>
 
     <button type="submit" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:12px;" id="btn-guardar">
-      Crear proyecto
+      <%= editandoActual ? 'Guardar cambios' : 'Crear proyecto' %>
     </button>
   </form>
 </div>
@@ -92,7 +94,11 @@
   }).map(function(p) { return { _id: p._id, nombre: p.nombre, rol: p.rol }; })) %>;
   const ROLE_LABELS = <%- JSON.stringify(ROLE_LABELS) %>;
 
-  let fases = [];
+  let fases = <%- JSON.stringify((formData && formData.fases) || []) %>;
+  const fasesJsonInicial = <%- JSON.stringify((formData && formData.fases_json) || '') %>;
+  if (!fases.length && fasesJsonInicial) {
+    try { fases = JSON.parse(fasesJsonInicial); } catch (e) { fases = []; }
+  }
 
   function renderFases() {
     const container = document.getElementById('fases-container');
@@ -180,12 +186,14 @@
   }
 
   document.getElementById('btn-add-fase').addEventListener('click', function () {
-    // Hereda las fechas del proyecto como sugerencia
+    // Cada fase nueva comienza donde termina la fase anterior.
     const pInicio = document.getElementById('p-inicio').value || '';
     const pFin = document.getElementById('p-fin').value || '';
+    const ultimaFase = fases[fases.length - 1];
+    const inicioSugerido = ultimaFase && ultimaFase.fecha_fin ? ultimaFase.fecha_fin : pInicio;
     fases.push({
       nombre: '',
-      fecha_inicio: pInicio,
+      fecha_inicio: inicioSugerido,
       fecha_fin: pFin,
       presupuesto_asignado: 0,
       personal_asignado: [],

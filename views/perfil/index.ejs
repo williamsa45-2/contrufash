@@ -1,9 +1,14 @@
-<%
-/* Sprint 4: Perfil del usuario — todos los roles */
-const { ROLE_LABELS } = require('../../utils/roles');
-%>
+<% /* Sprint 4: Perfil del usuario — todos los roles */ %>
 
-<div style="max-width:560px;">
+<div class="perfil-page">
+  <div class="perfil-heading">
+    <div>
+      <div class="eyebrow">CUENTA</div>
+      <h1>Mi perfil</h1>
+      <p>Administra tus datos personales y la seguridad de tu cuenta.</p>
+    </div>
+  </div>
+
   <div class="hazard-stripe" style="margin-bottom:20px;"></div>
 
   <% if (typeof mensaje !== 'undefined' && mensaje) { %>
@@ -40,7 +45,7 @@ const { ROLE_LABELS } = require('../../utils/roles');
     <form method="POST" action="/perfil/actualizar">
       <div class="cf-field">
         <label>Nombre completo <span style="color:var(--orange-600);">*</span></label>
-        <input type="text" name="nombre" required value="<%= usuario.nombre || '' %>">
+        <input type="text" name="nombre" required maxlength="120" value="<%= usuario.nombre || '' %>">
       </div>
       <div class="cf-field">
         <label>Email</label>
@@ -50,7 +55,7 @@ const { ROLE_LABELS } = require('../../utils/roles');
       </div>
       <div class="cf-field">
         <label>Teléfono</label>
-        <input type="tel" name="telefono" value="<%= usuario.telefono || '' %>" placeholder="310 000 0000">
+        <input type="tel" name="telefono" maxlength="30" value="<%= usuario.telefono || '' %>" placeholder="310 000 0000">
       </div>
       <button type="submit" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
         Guardar cambios
@@ -90,7 +95,7 @@ const { ROLE_LABELS } = require('../../utils/roles');
   <!-- Info de cuenta (solo lectura) -->
   <div class="cf-card" style="background:var(--paper);">
     <h2 style="margin:0 0 12px; font-size:0.85rem; color:var(--ink-500);">Información de cuenta</h2>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:0.82rem;">
+    <div class="perfil-account-grid">
       <div><span style="color:var(--ink-500);">Estado:</span>
         <span class="cf-badge <%= usuario.estado === 'activo' ? 'cf-badge-success' : 'cf-badge-danger' %>" style="margin-left:4px;">
           <%= usuario.estado %>

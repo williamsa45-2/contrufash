@@ -25,16 +25,34 @@ const mostrarPerfil = asyncHandler(async (req, res) => {
  * Actualiza nombre y telefono del usuario.
  */
 const actualizarPerfil = asyncHandler(async (req, res) => {
-  const { nombre, telefono } = req.body;
+  const nombre = typeof req.body.nombre === 'string' ? req.body.nombre.trim() : '';
+  const telefono = typeof req.body.telefono === 'string' ? req.body.telefono.trim() : '';
 
-  if (!nombre || !nombre.trim()) {
+  if (!nombre) {
     return res.redirect('/perfil?error=' + encodeURIComponent('El nombre no puede estar vacío'));
   }
 
-  await User.findByIdAndUpdate(req.user.user_id, {
-    nombre: nombre.trim(),
-    telefono: (telefono || '').trim(),
-  });
+  if (nombre.length > 120) {
+    return res.redirect('/perfil?error=' + encodeURIComponent('El nombre no puede superar los 120 caracteres'));
+  }
+
+  if (telefono.length > 30) {
+    return res.redirect('/perfil?error=' + encodeURIComponent('El teléfono no puede superar los 30 caracteres'));
+  }
+
+  const usuario = await User.findByIdAndUpdate(
+    req.user.user_id,
+    { nombre, telefono },
+    { new: true, runValidators: true }
+  );
+
+  if (!usuario) {
+    return res.status(404).render('errors/404', {
+      title: 'No encontrado',
+      mensaje: 'Usuario no encontrado.',
+      layout: false,
+    });
+  }
 
   res.redirect('/perfil?mensaje=' + encodeURIComponent('Perfil actualizado correctamente'));
 });
@@ -64,6 +82,10 @@ const cambiarPassword = asyncHandler(async (req, res) => {
   const correcta = await usuario.compararPassword(password_actual);
   if (!correcta) {
     return res.redirect('/perfil?error=' + encodeURIComponent('La contraseña actual es incorrecta'));
+  }
+
+  if (password_actual === password_nueva) {
+    return res.redirect('/perfil?error=' + encodeURIComponent('La nueva contraseña debe ser diferente a la actual'));
   }
 
   usuario.password = password_nueva;

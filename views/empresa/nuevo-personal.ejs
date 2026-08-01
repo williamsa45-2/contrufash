@@ -1,3 +1,5 @@
+<% const editandoActual = typeof editando !== 'undefined' && editando; %>
+
 <div style="max-width:500px;">
   <a href="/empresa/personal" class="cf-btn cf-btn-ghost cf-btn-sm" style="margin-bottom:18px;">
     ← Volver a personal
@@ -8,11 +10,11 @@
   <% } %>
 
   <div class="cf-card">
-    <h2 style="margin:0 0 16px; font-size:1rem;">Datos del integrante</h2>
-    <form method="POST" action="/empresa/personal">
+    <h2 style="margin:0 0 16px; font-size:1rem;"><%= editandoActual ? 'Editar integrante' : 'Datos del integrante' %></h2>
+    <form method="POST" action="<%= editandoActual ? '/empresa/personal/' + formData._id + '/editar' : '/empresa/personal' %>">
       <div class="cf-field">
         <label>Nombre completo <span style="color:var(--orange-600);">*</span></label>
-        <input type="text" name="nombre" required value="<%= typeof formData !== 'undefined' ? (formData.nombre || '') : '' %>">
+        <input type="text" name="nombre" required maxlength="120" value="<%= typeof formData !== 'undefined' ? (formData.nombre || '') : '' %>">
       </div>
       <div class="cf-field">
         <label>Correo electronico <span style="color:var(--orange-600);">*</span></label>
@@ -30,16 +32,16 @@
         </select>
       </div>
       <div class="cf-field">
-        <label>Contrasena inicial <span style="color:var(--orange-600);">*</span></label>
-        <input type="password" name="password" required minlength="8">
-        <div class="hint">Minimo 8 caracteres. El usuario la puede cambiar despues.</div>
+        <label><%= editandoActual ? 'Nueva contrasena' : 'Contrasena inicial' %> <span style="color:var(--orange-600);"><%= editandoActual ? '' : '*' %></span></label>
+        <input type="password" name="password" <%= editandoActual ? '' : 'required' %> minlength="8" autocomplete="new-password">
+        <div class="hint"><%= editandoActual ? 'Dejala vacia para conservar la contrasena actual.' : 'Minimo 8 caracteres. El usuario la puede cambiar despues.' %></div>
       </div>
       <div class="cf-field">
         <label>Telefono</label>
         <input type="tel" name="telefono" value="<%= typeof formData !== 'undefined' ? (formData.telefono || '') : '' %>" placeholder="314 000 0000">
       </div>
       <button type="submit" class="cf-btn cf-btn-primary" style="width:100%; justify-content:center; padding:11px;">
-        Agregar integrante
+        <%= editandoActual ? 'Guardar cambios' : 'Agregar integrante' %>
       </button>
     </form>
   </div>

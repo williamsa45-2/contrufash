@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConstruFash · Software de gestion de obras</title>
+  <meta name="description" content="ConstruFash: control de avances, materiales, evidencias fotograficas y notificaciones en tiempo real para constructoras, en una sola plataforma multi-empresa.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/landing.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#e8590c">
+</head>
+<body class="lp">
+
+  <!-- ===== Topbar ===== -->
+  <div class="lp-topbar">
+    <div class="lp-topbar-inner">
+      <span><strong>soporte@construfash.com</strong> &nbsp;·&nbsp; Lun–Vie, 8:00–18:00</span>
+      <span class="lp-topbar-tag">Plataforma multi-empresa para constructoras</span>
+    </div>
+  </div>
+
+  <!-- ===== Header / Nav ===== -->
+  <header class="lp-header" id="lp-header">
+    <div class="lp-header-inner">
+      <a href="#top" class="lp-mark">Constru<span>Fash</span></a>
+      <nav class="lp-nav" id="lp-nav">
+        <a href="#modulos">Modulos</a>
+        <a href="#portafolio">Proyectos</a>
+        <a href="#nosotros">Por que ConstruFash</a>
+        <a href="#cotizar">Solicitar demo</a>
+      </nav>
+      <div class="lp-header-actions">
+        <a href="/login" class="lp-btn lp-btn-ghost">Iniciar sesion</a>
+        <a href="#cotizar" class="lp-btn lp-btn-primary">Solicitar demo</a>
+      </div>
+      <button class="lp-burger" id="lp-burger" aria-label="Abrir menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ===== Hero ===== -->
+    <section class="lp-hero">
+      <div class="lp-hero-bg" aria-hidden="true"></div>
+      <div class="lp-hero-inner">
+        <span class="lp-eyebrow">Gestion de obra civil · Multi-empresa</span>
+        <h1>Cada avance de obra,<br>registrado antes de que se pierda.</h1>
+        <p class="lp-hero-sub">
+          ConstruFash conecta a tu Admin de empresa, Jefe de Obra, Almacenista, Constructores
+          y Clientes en un solo panel: avances por fase, solicitudes de materiales,
+          evidencia fotografica y notificaciones en tiempo real.
+        </p>
+        <div class="lp-hero-cta">
+          <a href="#cotizar" class="lp-btn lp-btn-primary lp-btn-lg">Solicitar una demo</a>
+          <a href="#portafolio" class="lp-btn lp-btn-outline lp-btn-lg">Ver proyectos en la plataforma</a>
+        </div>
+      </div>
+
+      <div class="lp-trust">
+        <div class="lp-trust-card">
+          <div class="lp-trust-num"><%= metricas.empresas %>+</div>
+          <div class="lp-trust-label">Empresas activas</div>
+        </div>
+        <div class="lp-trust-card">
+          <div class="lp-trust-num"><%= metricas.proyectos %>+</div>
+          <div class="lp-trust-label">Proyectos entregados</div>
+        </div>
+        <div class="lp-trust-card">
+          <div class="lp-trust-num">100%</div>
+          <div class="lp-trust-label">Aislamiento entre empresas</div>
+        </div>
+        <div class="lp-trust-card">
+          <div class="lp-trust-num">Tiempo real</div>
+          <div class="lp-trust-label">Alertas via Socket.io</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Modulos / Servicios ===== -->
+    <section class="lp-section" id="modulos">
+      <div class="lp-section-head">
+        <span class="lp-eyebrow lp-eyebrow-dark">Modulos</span>
+        <h2>Todo el ciclo de obra, en un solo lugar</h2>
+        <p>Cada rol ve exactamente lo que necesita: sin hojas de calculo sueltas ni cadenas de WhatsApp perdidas.</p>
+      </div>
+
+      <div class="lp-grid-4">
+        <article class="lp-card">
+          <div class="lp-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18M7 15l4-5 3 3 5-7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Avance por fases</h3>
+          <p>Gantt planificado vs. real, con presupuesto y personal asignado a cada fase del proyecto.</p>
+        </article>
+        <article class="lp-card">
+          <div class="lp-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M12 12h8m0 0-3-3m3 3-3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Solicitud de materiales</h3>
+          <p>El Jefe de Obra pide, el Admin aprueba y el Almacenista despacha: todo con historial y kardex.</p>
+        </article>
+        <article class="lp-card">
+          <div class="lp-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h3l2-2h6l2 2h3v13H4V7Z" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2"/></svg>
+          </div>
+          <h3>Evidencia fotografica</h3>
+          <p>Los constructores certifican su trabajo con fotos revisadas por el Jefe de Obra, con Cloudinary.</p>
+        </article>
+        <article class="lp-card">
+          <div class="lp-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a6 6 0 0 0-6 6v4l-2 4h16l-2-4V8a6 6 0 0 0-6-6ZM9 20a3 3 0 0 0 6 0" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Notificaciones en vivo</h3>
+          <p>Retrasos, aprobaciones y avances llegan al instante a quien debe actuar, via Socket.io.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===== Portafolio ===== -->
+    <section class="lp-section lp-section-alt" id="portafolio">
+      <div class="lp-section-head">
+        <span class="lp-eyebrow lp-eyebrow-dark">Proyectos reales</span>
+        <h2>Obras gestionadas con ConstruFash</h2>
+        <p>Una muestra de proyectos que las empresas que usan la plataforma decidieron hacer publicos.</p>
+      </div>
+
+      <% if (portafolio.length) { %>
+        <div class="lp-filters" role="tablist" aria-label="Filtrar proyectos por categoria">
+          <button class="lp-filter is-active" data-filter="todos" type="button">Todos</button>
+          <button class="lp-filter" data-filter="residencial" type="button">Residencial</button>
+          <button class="lp-filter" data-filter="comercial" type="button">Comercial</button>
+          <button class="lp-filter" data-filter="industrial" type="button">Industrial</button>
+        </div>
+
+        <div class="lp-portfolio-grid" id="lp-portfolio-grid">
+          <% portafolio.forEach(function (p) { %>
+            <article class="lp-project" data-category="<%= p.categoria %>">
+              <div class="lp-project-media">
+                <img src="<%= p.imagen %>" alt="<%= p.nombre %>" loading="lazy">
+                <span class="lp-project-badge lp-project-badge-<%= p.estado %>">
+                  <%= p.estado === 'finalizado' ? 'Finalizado' : 'En ejecucion' %>
+                </span>
+                <div class="lp-project-overlay">
+                  <strong><%= p.nombre %></strong>
+                  <span>
+                    <% if (p.ubicacion) { %><%= p.ubicacion %><% } %>
+                    <% if (p.area_m2) { %> · <%= p.area_m2 %> m²<% } %>
+                    <% if (p.anio) { %> · <%= p.anio %><% } %>
+                  </span>
+                </div>
+              </div>
+              <div class="lp-project-body">
+                <span class="lp-project-cat"><%= p.categoria %></span>
+                <h3><%= p.nombre %></h3>
+                <p><%= p.descripcion %></p>
+              </div>
+            </article>
+          <% }); %>
+        </div>
+      <% } else { %>
+        <div class="lp-empty">
+          <p><strong>Aun no hay proyectos publicos.</strong></p>
+          <p>Las empresas que usan ConstruFash deciden que proyectos mostrar aqui. Si tu empresa quiere aparecer, activa la vitrina publica desde el panel de administracion.</p>
+        </div>
+      <% } %>
+    </section>
+
+    <!-- ===== Diferenciadores ===== -->
+    <section class="lp-section" id="nosotros">
+      <div class="lp-section-head">
+        <span class="lp-eyebrow lp-eyebrow-dark">Por que ConstruFash</span>
+        <h2>Construido para la forma en que realmente se trabaja una obra</h2>
+      </div>
+
+      <div class="lp-grid-3">
+        <div class="lp-diff">
+          <div class="lp-diff-num font-mono">01</div>
+          <h3>Aislamiento real entre empresas</h3>
+          <p>Cada empresa opera en su propio espacio: usuarios, proyectos y datos nunca se cruzan entre tenants.</p>
+        </div>
+        <div class="lp-diff">
+          <div class="lp-diff-num font-mono">02</div>
+          <h3>Trazabilidad con evidencia</h3>
+          <p>Cada fase se cierra con fotos revisadas, no con la palabra de alguien. Todo queda registrado.</p>
+        </div>
+        <div class="lp-diff">
+          <div class="lp-diff-num font-mono">03</div>
+          <h3>Roles con permisos claros</h3>
+          <p>Admin, Jefe de Obra, Almacenista, Constructor y Cliente: cada uno ve y hace solo lo que le corresponde.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Cotizador ===== -->
+    <section class="lp-section lp-section-dark" id="cotizar">
+      <div class="lp-cotizar-grid">
+        <div class="lp-cotizar-copy">
+          <span class="lp-eyebrow">Solicitar demo</span>
+          <h2>Cuentanos sobre tu obra</h2>
+          <p>Escribenos y un asesor te contacta para mostrarte ConstruFash funcionando con tus propios proyectos.</p>
+          <ul class="lp-cotizar-list">
+            <li>Respuesta en menos de 24 horas habiles.</li>
+            <li>Configuracion de tu empresa incluida.</li>
+            <li>Sin compromiso ni tarjeta de credito.</li>
+          </ul>
+        </div>
+
+        <form class="lp-form" id="lp-form" novalidate>
+          <div class="lp-form-row">
+            <label for="lp-nombre">Nombre completo</label>
+            <input id="lp-nombre" name="nombre" type="text" required autocomplete="name">
+          </div>
+          <div class="lp-form-row lp-form-row-2">
+            <div>
+              <label for="lp-telefono">Telefono / WhatsApp</label>
+              <input id="lp-telefono" name="telefono" type="tel" required autocomplete="tel">
+            </div>
+            <div>
+              <label for="lp-email">Correo</label>
+              <input id="lp-email" name="email" type="email" required autocomplete="email">
+            </div>
+          </div>
+          <div class="lp-form-row">
+            <label for="lp-tipo-obra">Tipo de obra</label>
+            <select id="lp-tipo-obra" name="tipo_obra" required>
+              <option value="" disabled selected>Selecciona una opcion</option>
+              <option value="residencial">Residencial</option>
+              <option value="comercial">Comercial</option>
+              <option value="industrial">Industrial</option>
+              <option value="remodelacion">Remodelacion</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="lp-form-row">
+            <label for="lp-mensaje">Cuentanos brevemente que necesitas</label>
+            <textarea id="lp-mensaje" name="mensaje" rows="3"></textarea>
+          </div>
+          <!-- Honeypot anti-spam, oculto para personas -->
+          <div class="lp-hp">
+            <label for="lp-empresa-trampa">Empresa</label>
+            <input id="lp-empresa-trampa" name="empresa_trampa" type="text" tabindex="-1" autocomplete="off">
+          </div>
+
+          <button type="submit" class="lp-btn lp-btn-primary lp-btn-lg lp-form-submit">
+            <span class="lp-form-submit-text">Enviar solicitud</span>
+          </button>
+          <p class="lp-form-status" id="lp-form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===== Footer ===== -->
+  <footer class="lp-footer">
+    <div class="lp-footer-inner">
+      <div class="lp-footer-brand">
+        <div class="lp-mark">Constru<span>Fash</span></div>
+        <p>Software de gestion de obras civiles, multi-empresa y por roles.</p>
+      </div>
+      <div class="lp-footer-col">
+        <h4>Plataforma</h4>
+        <a href="#modulos">Modulos</a>
+        <a href="#portafolio">Proyectos</a>
+        <a href="/login">Iniciar sesion</a>
+      </div>
+      <div class="lp-footer-col">
+        <h4>Contacto</h4>
+        <a href="mailto:soporte@construfash.com">soporte@construfash.com</a>
+        <span>Lun–Vie, 8:00–18:00</span>
+      </div>
+    </div>
+    <div class="hazard-stripe"></div>
+    <div class="lp-footer-legal font-mono">© <%= new Date().getFullYear() %> ConstruFash. Todos los derechos reservados.</div>
+  </footer>
+
+  <script src="/js/landing.js"></script>
+</body>
+</html>
